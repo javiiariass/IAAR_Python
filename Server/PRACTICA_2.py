@@ -75,7 +75,7 @@ def main():
     print("INICIANDO COMPORTAMIENTO REACTIVO...")
 
     # Usar la clase Camera definida en el workspace (usa picamera2 internamente)
-    cap = Camera(stream_size=(320, 240))
+    cap = Camera(stream_size=(320, 240), hflip=True, vflip=True)
     cap.start_stream()
 
     # Dar un segundo para que la cámara arranque y exponga correctamente
