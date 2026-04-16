@@ -9,9 +9,10 @@ motor = Motor()
 def detener():
     motor.setMotorModel(0, 0, 0, 0)
 
+
+# valores de -4095 a 4095
 def avanzar(velocidad=1500):
-    #valores de -4095 a 4095
-motor.setMotorModel(velocidad, velocidad, velocidad, velocidad)
+    motor.setMotorModel(velocidad, velocidad, velocidad, velocidad)
 
 def girar_aleatorio():
     """Realiza un giro sobre sí mismo de duración y sentido aleatorios."""
