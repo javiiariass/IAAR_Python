@@ -19,11 +19,12 @@ def avanzar(velocidad=1200):
 def girar_aleatorio():
     """Realiza un giro sobre sí mismo de duración y sentido aleatorios. Si está atascado, puede retroceder."""
     velocidad_giro = 2000
+    velocidad_retroceso = 1200
     
     # Retroceder un poco SIEMPRE antes de girar (para escapar de la esquina físicamente)
     # Al invertir, enviamos voltaje positivo (+) para ir hacia atrás (según la polarización invertida corregida)
-    motor.setMotorModel(velocidad_giro, velocidad_giro)
-    time.sleep(0.5)
+    motor.setMotorModel(velocidad_retroceso, velocidad_retroceso)
+    time.sleep(0.3)
     detener()
     time.sleep(0.1)
 
