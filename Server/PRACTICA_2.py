@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import time
 import random
-from Motor import *  # Importamos la clase Motor del repositorio de Freenove
+from motor import *  # Importamos la clase Motor del repositorio de Freenove
 
 motor = Motor()
 
