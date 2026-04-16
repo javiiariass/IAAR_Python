@@ -16,8 +16,8 @@ def avanzar(velocidad=1200):
     # Valores negativos para forzar avance hacia adelante si los motores están montados al revés
     motor.setMotorModel(-velocidad, -velocidad)
 
-def girar_aleatorio():
-    """Realiza un giro sobre sí mismo de duración y sentido aleatorios. Si está atascado, puede retroceder."""
+def girar_aleatorio(tiempo_min=0.5, tiempo_max=1.5):
+    """Realiza un giro sobre sí mismo de duración aleatoria acotada entre tiempo_min y tiempo_max. Si está atascado, retrocede."""
     velocidad_giro = 2000
     velocidad_retroceso = 1200
     
@@ -38,8 +38,8 @@ def girar_aleatorio():
         # Las orugas izquierdas retroceden (positivo), las derechas avanzan (negativo)
         motor.setMotorModel(velocidad_giro, -velocidad_giro)
 
-    # El tiempo de giro aleatorio (entre 0.5 y 1.5 segundos) define el grado del giro
-    tiempo_giro = random.uniform(0.5, 1.5)
+    # El tiempo de giro aleatorio define los grados del giro, acotando entre los parámetros min y max
+    tiempo_giro = random.uniform(tiempo_min, tiempo_max)
     time.sleep(tiempo_giro)
     detener()
 
@@ -75,7 +75,7 @@ def detectar_linea_verde(frame):
     # cv2.waitKey(1)
 
     # umbral límite de puntos verdes
-    UMBRAL = 3000
+    UMBRAL = 3500
     if pixeles_verdes > UMBRAL:
         return True, pixeles_verdes
     return False, pixeles_verdes
