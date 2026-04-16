@@ -4,30 +4,22 @@ import time
 import random
 from Motor import *  # Importamos la clase Motor del repositorio de Freenove
 
-# Inicializamos el controlador de motores de Freenove
 motor = Motor()
 
-
-# --- FUNCIONES DE MOVIMIENTO ---
-
 def detener():
-    """Detiene todos los motores del tanque."""
     motor.setMotorModel(0, 0, 0, 0)
 
-
 def avanzar(velocidad=1500):
-    """Hace que el tanque avance en línea recta."""
-    # En Freenove, los valores van típicamente de -4095 a 4095
-    motor.setMotorModel(velocidad, velocidad, velocidad, velocidad)
-
+    #valores de -4095 a 4095
+motor.setMotorModel(velocidad, velocidad, velocidad, velocidad)
 
 def girar_aleatorio():
     """Realiza un giro sobre sí mismo de duración y sentido aleatorios."""
     velocidad_giro = 2000
     direccion = random.choice(["izquierda", "derecha"])
-
+    #girar derecha -> orugas izquierdas avanzan y derechas retroceden
+    #girar izquierda -> orugas derechas avanzan e izquierdas retroceden
     if direccion == "derecha":
-        # Las orugas izquierdas avanzan, las derechas retroceden
         motor.setMotorModel(velocidad_giro, velocidad_giro, -velocidad_giro, -velocidad_giro)
     else:
         # Las orugas izquierdas retroceden, las derechas avanzan
@@ -65,24 +57,21 @@ def detectar_linea_verde(frame):
     # 5. Contar cuántos píxeles verdes hay en nuestra zona cercana
     pixeles_verdes = cv2.countNonZero(mascara)
 
-    # Mostrar por pantalla para depuración (opcional, puedes comentarlo)
+    #debug para comprobar
     # cv2.imshow("Mascara Verde", mascara)
     # cv2.waitKey(1)
 
-    # 6. Umbral de decisión (si hay más de X píxeles, consideramos que hemos topado con el límite)
-    UMBRAL = 2000  # <-- Ajustar este valor según la resolución y tamaño de la cinta
-
+    # umbral límite de puntos verdes
+    UMBRAL = 2000
     if pixeles_verdes > UMBRAL:
         return True
     return False
 
 
-# --- BUCLE PRINCIPAL (COMPORTAMIENTO REACTIVO) ---
-
+#BUCLE PRINCIPAL
 def main():
-    print("Iniciando Práctica 2: Comportamiento Reactivo...")
+    print("INICIANDO COMPORTAMIENTO REACTIVO...")
 
-    # Inicializar la cámara (0 suele ser la cámara Pi conectada/USB)
     cap = cv2.VideoCapture(0)
 
     # Bajar la resolución para procesar más rápido
@@ -96,10 +85,9 @@ def main():
                 print("Error al leer la cámara")
                 break
 
-            # Percibir el entorno
             limite_detectado = detectar_linea_verde(frame)
 
-            # Actuar en consecuencia (Reflejo simple)
+            #COMPORTAMIENTO REACTIVO
             if limite_detectado:
                 print("¡Límite verde detectado! Evadiendo...")
                 detener()
@@ -108,8 +96,9 @@ def main():
             else:
                 avanzar()
 
+    #DETENER PROGRAMA
     except KeyboardInterrupt:
-        # Manejo seguro si presionas Ctrl+C en la consola
+        #CTRL + C
         print("\nPrograma interrumpido por el usuario.")
 
     finally:
