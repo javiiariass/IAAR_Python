@@ -12,13 +12,13 @@ def detener():
 
 
 # valores de -4095 a 4095
-def avanzar(velocidad=500):
+def avanzar(velocidad=1200):
     # Valores negativos para forzar avance hacia adelante si los motores están montados al revés
     motor.setMotorModel(-velocidad, -velocidad)
 
 def girar_aleatorio():
     """Realiza un giro sobre sí mismo de duración y sentido aleatorios."""
-    velocidad_giro = 2000
+    velocidad_giro = 1000
     direccion = random.choice(["izquierda", "derecha"])
     # Al estar los motores invertidos, también invertimos la lógica de giro
     # girar derecha -> orugas izquierdas avanzan (negativo) y derechas retroceden (positivo)
@@ -68,8 +68,8 @@ def detectar_linea_verde(frame):
     # umbral límite de puntos verdes
     UMBRAL = 3000
     if pixeles_verdes > UMBRAL:
-        return True
-    return False
+        return True, pixeles_verdes
+    return False, pixeles_verdes
 
 
 #BUCLE PRINCIPAL
@@ -98,11 +98,14 @@ def main():
                 print("Error al decodificar la imagen de la cámara")
                 continue
 
-            limite_detectado = detectar_linea_verde(frame)
+            limite_detectado, cantidad_pixeles = detectar_linea_verde(frame)
+            
+            # Imprimir constantemente los píxeles (usa \r para no saturar la pantalla con 1234567 líneas)
+            print(f"Píxeles verdes vistos: {cantidad_pixeles} (Umbral actual: 3000)      ", end="\r")
 
             #COMPORTAMIENTO REACTIVO
             if limite_detectado:
-                print("¡Límite verde detectado! Evadiendo...")
+                print(f"\n¡Límite verde detectado! ({cantidad_pixeles} px) Evadiendo...")
                 detener()
                 time.sleep(0.2)  # Breve pausa para estabilizar
                 girar_aleatorio()
