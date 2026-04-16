@@ -17,8 +17,16 @@ def avanzar(velocidad=1200):
     motor.setMotorModel(-velocidad, -velocidad)
 
 def girar_aleatorio():
-    """Realiza un giro sobre sí mismo de duración y sentido aleatorios."""
-    velocidad_giro = 1000
+    """Realiza un giro sobre sí mismo de duración y sentido aleatorios. Si está atascado, puede retroceder."""
+    velocidad_giro = 2000
+    
+    # Retroceder un poco SIEMPRE antes de girar (para escapar de la esquina físicamente)
+    # Al invertir, enviamos voltaje positivo (+) para ir hacia atrás (según la polarización invertida corregida)
+    motor.setMotorModel(velocidad_giro, velocidad_giro)
+    time.sleep(0.5)
+    detener()
+    time.sleep(0.1)
+
     direccion = random.choice(["izquierda", "derecha"])
     # Al estar los motores invertidos, también invertimos la lógica de giro
     # girar derecha -> orugas izquierdas avanzan (negativo) y derechas retroceden (positivo)
@@ -100,15 +108,22 @@ def main():
 
             limite_detectado, cantidad_pixeles = detectar_linea_verde(frame)
             
-            # Imprimir constantemente los píxeles (usa \r para no saturar la pantalla con 1234567 líneas)
+            # Imprimir constantemente los píxeles (usa \r para no saturar la pantalla)
             print(f"Píxeles verdes vistos: {cantidad_pixeles} (Umbral actual: 3000)      ", end="\r")
 
             #COMPORTAMIENTO REACTIVO
             if limite_detectado:
                 print(f"\n¡Límite verde detectado! ({cantidad_pixeles} px) Evadiendo...")
                 detener()
-                time.sleep(0.2)  # Breve pausa para estabilizar
+                time.sleep(0.3)  # Pausa antes de la maniobra de salida
+                
+                # Retroceder + girar en vez de solo girar sobre su eje apoyado en la esquina
                 girar_aleatorio()
+                
+                # Devolver el control al flujo normal
+                detener()
+                time.sleep(0.2)
+                
             else:
                 avanzar()
 
