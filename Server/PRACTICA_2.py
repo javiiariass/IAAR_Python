@@ -75,7 +75,7 @@ def detectar_linea_verde(frame):
     # cv2.waitKey(1)
 
     # umbral límite de puntos verdes
-    UMBRAL = 3500
+    UMBRAL = 3000
     if pixeles_verdes > UMBRAL:
         return True, pixeles_verdes
     return False, pixeles_verdes
