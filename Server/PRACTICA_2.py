@@ -3,6 +3,7 @@ import numpy as np
 import time
 import random
 from motor import tankMotor
+from camera import Camera
 
 motor = tankMotor()
 
@@ -73,19 +74,27 @@ def detectar_linea_verde(frame):
 def main():
     print("INICIANDO COMPORTAMIENTO REACTIVO...")
 
-    # Usar explícitamente el backend V4L2 (recomendado en Raspberry Pi)
-    cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+    # Usar la clase Camera definida en el workspace (usa picamera2 internamente)
+    cap = Camera(stream_size=(320, 240))
+    cap.start_stream()
 
-    # Bajar la resolución para procesar más rápido
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+    # Dar un segundo para que la cámara arranque y exponga correctamente
+    time.sleep(1)
 
     try:
         while True:
-            ret, frame = cap.read()
-            if not ret:
-                print("Error al leer la cámara")
-                break
+            # Obtener frame como bytes
+            frame_bytes = cap.get_frame()
+            if frame_bytes is None:
+                continue
+
+            # Decodificar el frame a una imagen OpenCV
+            np_arr = np.frombuffer(frame_bytes, np.uint8)
+            frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
+            if frame is None:
+                print("Error al decodificar la imagen de la cámara")
+                continue
 
             limite_detectado = detectar_linea_verde(frame)
 
@@ -106,8 +115,9 @@ def main():
     finally:
         # Siempre detener motores y liberar cámara al salir
         detener()
-        cap.release()
-        cv2.destroyAllWindows()
+        motor.close()
+        cap.stop_stream()
+        cap.close()
         print("Robot detenido de forma segura.")
 
 
