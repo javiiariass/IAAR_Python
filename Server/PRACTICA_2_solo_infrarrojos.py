@@ -19,15 +19,17 @@ def main():
             cen = ir.read_one_infrared(2)
             der = ir.read_one_infrared(3)
 
-            # Generar algo muy visual para la terminal. 
-            # NOTA: Dependiendo de tu hardware, 1 puede ser Blanco y 0 Negro, o viceversa.
-            # Representaremos el 1 como 🟩 y el 0 como ⬛ solo para que destaque el cambio.
-            viz_izq = "🟩" if izq == 1 else "⬛"
-            viz_cen = "🟩" if cen == 1 else "⬛"
-            viz_der = "🟩" if der == 1 else "⬛"
+            # Evaluamos si alguno de los sensores detecta la línea (asumimos que 1 = línea detectada)
+            # NOTA: Si al ponerlo en la línea verde los sensores marcan 0, cambia los '== 1' por '== 0'
+            linea_detectada = (izq == 1) or (cen == 1) or (der == 1)
+            
+            if linea_detectada:
+                estado = "🟢 ¡Línea verde detectada!"
+            else:
+                estado = "⚪ Suelo libre..."
 
-            # Imprimir en una misma línea reemplazándola (usando retorno de carro \r) para limpiar la terminal
-            print(f"Sensores (Izq, Cen, Der): [{izq}] [{cen}] [{der}]  -->  {viz_izq} {viz_cen} {viz_der}      ", end="\r")
+            # Imprimir en una misma línea reemplazándola para limpiar la terminal
+            print(f"Sensores [Izq:{izq} Cen:{cen} Der:{der}] --> {estado}          ", end="\r")
             
             # Pequeña pausa para no saturar la CPU
             time.sleep(0.1)
