@@ -12,8 +12,8 @@ def detectar_linea_verde(frame):
     """
     altura, anchura = frame.shape[:2]
 
-    # 1. Definir ROI (Región de Interés): Analizamos solo el tercio inferior
-    roi = frame[int(altura * 2 / 3):altura, 0:anchura]
+    # 1. Definir ROI (Región de Interés): Analizamos la mitad inferior para abarcar más campo de visión
+    roi = frame[int(altura / 2):altura, 0:anchura]
 
     # 2. Convertir a HSV
     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
