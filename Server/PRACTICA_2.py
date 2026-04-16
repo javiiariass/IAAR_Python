@@ -12,7 +12,7 @@ def detener():
 
 
 # valores de -4095 a 4095
-def avanzar(velocidad=1500):
+def avanzar(velocidad=500):
     # Valores negativos para forzar avance hacia adelante si los motores están montados al revés
     motor.setMotorModel(-velocidad, -velocidad)
 
