@@ -13,19 +13,21 @@ def detener():
 
 # valores de -4095 a 4095
 def avanzar(velocidad=1500):
-    motor.setMotorModel(velocidad, velocidad)
+    # Valores negativos para forzar avance hacia adelante si los motores están montados al revés
+    motor.setMotorModel(-velocidad, -velocidad)
 
 def girar_aleatorio():
     """Realiza un giro sobre sí mismo de duración y sentido aleatorios."""
     velocidad_giro = 2000
     direccion = random.choice(["izquierda", "derecha"])
-    #girar derecha -> orugas izquierdas avanzan y derechas retroceden
-    #girar izquierda -> orugas derechas avanzan e izquierdas retroceden
+    # Al estar los motores invertidos, también invertimos la lógica de giro
+    # girar derecha -> orugas izquierdas avanzan (negativo) y derechas retroceden (positivo)
+    # girar izquierda -> orugas derechas avanzan (negativo) e izquierdas retroceden (positivo)
     if direccion == "derecha":
-        motor.setMotorModel(velocidad_giro, -velocidad_giro)
-    else:
-        # Las orugas izquierdas retroceden, las derechas avanzan
         motor.setMotorModel(-velocidad_giro, velocidad_giro)
+    else:
+        # Las orugas izquierdas retroceden (positivo), las derechas avanzan (negativo)
+        motor.setMotorModel(velocidad_giro, -velocidad_giro)
 
     # El tiempo de giro aleatorio (entre 0.5 y 1.5 segundos) define el grado del giro
     tiempo_giro = random.uniform(0.5, 1.5)
