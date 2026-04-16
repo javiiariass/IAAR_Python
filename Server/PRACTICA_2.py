@@ -73,7 +73,8 @@ def detectar_linea_verde(frame):
 def main():
     print("INICIANDO COMPORTAMIENTO REACTIVO...")
 
-    cap = cv2.VideoCapture(0)
+    # Usar explícitamente el backend V4L2 (recomendado en Raspberry Pi)
+    cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
 
     # Bajar la resolución para procesar más rápido
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
