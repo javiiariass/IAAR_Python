@@ -2,17 +2,17 @@ import cv2
 import numpy as np
 import time
 import random
-from motor import *  # Importamos la clase Motor del repositorio de Freenove
+from motor import tankMotor
 
-motor = Motor()
+motor = tankMotor()
 
 def detener():
-    motor.setMotorModel(0, 0, 0, 0)
+    motor.setMotorModel(0, 0)
 
 
 # valores de -4095 a 4095
 def avanzar(velocidad=1500):
-    motor.setMotorModel(velocidad, velocidad, velocidad, velocidad)
+    motor.setMotorModel(velocidad, velocidad)
 
 def girar_aleatorio():
     """Realiza un giro sobre sí mismo de duración y sentido aleatorios."""
@@ -21,10 +21,10 @@ def girar_aleatorio():
     #girar derecha -> orugas izquierdas avanzan y derechas retroceden
     #girar izquierda -> orugas derechas avanzan e izquierdas retroceden
     if direccion == "derecha":
-        motor.setMotorModel(velocidad_giro, velocidad_giro, -velocidad_giro, -velocidad_giro)
+        motor.setMotorModel(velocidad_giro, -velocidad_giro)
     else:
         # Las orugas izquierdas retroceden, las derechas avanzan
-        motor.setMotorModel(-velocidad_giro, -velocidad_giro, velocidad_giro, velocidad_giro)
+        motor.setMotorModel(-velocidad_giro, velocidad_giro)
 
     # El tiempo de giro aleatorio (entre 0.5 y 1.5 segundos) define el grado del giro
     tiempo_giro = random.uniform(0.5, 1.5)
