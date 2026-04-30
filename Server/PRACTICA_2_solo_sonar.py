@@ -19,7 +19,7 @@ def main():
             
             # Formatear la salida visual
             if distancia >= 0:
-                if distancia < 15.0:
+                if distancia < 20.0:
                     estado = "🛑 ¡PELIGRO! Muy cerca "
                 elif distancia < 40.0:
                     estado = "⚠️ Precaución, obstáculo"

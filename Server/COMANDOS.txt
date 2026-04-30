@@ -1,0 +1,38 @@
+ssh practica@192.168.50.211
+
+git clone https://github.com/Freenove/Freenove_Tank_Robot_Kit_for_Raspberry_Pi
+sudo chmod 755 -R ~/Freenove_Tank_Robot_Kit_for_Raspberry_Pi
+cd ~/Freenove_Tank_Robot_Kit_for_Raspberry_Pi/Code
+sudo python setup.py
+sudo reboot
+sudo python servo.py
+sudo pigpiod
+sudo killall pigpiod
+
+
+--PINZA
+cd ~/Freenove_Tank_Robot_Kit_for_Raspberry_Pi/Code/Server
+sudo python servo.py
+--MOTOR
+cd ~/Freenove_Tank_Robot_Kit_for_Raspberry_Pi/Code/Server
+sudo python test.py Motor
+
+--SERVER
+
+cd ~/Freenove_Tank_Robot_Kit_for_Raspberry_Pi/Code/Server
+sudo python main.py
+--ULTRASONIC
+cd ~/Freenove_Tank_Robot_Kit_for_Raspberry_Pi/Code/Server
+sudo python ultrasonic.py
+
+--CAMARA
+cd ~/Freenove_Tank_Robot_Kit_for_Raspberry_Pi/Code/Server
+
+sudo python test.py camera
+
+
+
+**********************************************
+lab-comp2
+LC4$2Gwf@
+**********************************************

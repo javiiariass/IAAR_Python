@@ -5,6 +5,7 @@ import random
 from motor import tankMotor
 from camera import Camera
 from servo import Servo
+from ultrasonic import Ultrasonic
 
 motor = tankMotor()
 servo_obj = Servo()
@@ -22,19 +23,20 @@ def detener():
 # valores de -4095 a 4095
 def avanzar(velocidad=1200):
     # Valores negativos para forzar avance hacia adelante si los motores están montados al revés
-    motor.setMotorModel(-velocidad, -velocidad)
+    factor_correccion = 1.2
+    motor.setMotorModel(-velocidad, -velocidad*factor_correccion)
 
-def girar_aleatorio(tiempo_min=0.5, tiempo_max=1.5):
+def girar_aleatorio(tiempo_min=0.5, tiempo_max=1.5, retroceder=True, velocidad_giro=2000):
     """Realiza un giro sobre sí mismo de duración aleatoria acotada entre tiempo_min y tiempo_max. Si está atascado, retrocede."""
-    velocidad_giro = 2000
     velocidad_retroceso = 1200
     
-    # Retroceder un poco SIEMPRE antes de girar (para escapar de la esquina físicamente)
-    # Al invertir, enviamos voltaje positivo (+) para ir hacia atrás (según la polarización invertida corregida)
-    motor.setMotorModel(velocidad_retroceso, velocidad_retroceso)
-    time.sleep(0.3)
-    detener()
-    time.sleep(0.1)
+    if retroceder:
+        # Retroceder un poco SIEMPRE antes de girar (para escapar de la esquina físicamente)
+        # Al invertir, enviamos voltaje positivo (+) para ir hacia atrás (según la polarización invertida corregida)
+        motor.setMotorModel(velocidad_retroceso, velocidad_retroceso)
+        time.sleep(0.3)
+        detener()
+        time.sleep(0.1)
 
     direccion = random.choice(["izquierda", "derecha"])
     # Al estar los motores invertidos, también invertimos la lógica de giro
@@ -96,6 +98,9 @@ def main():
     # Levantar el gancho para que no estorbe a la cámara
     levantar_gancho()
 
+    # Inicializar el sensor de ultrasonidos (sonar)
+    sonar = Ultrasonic()
+
     # Usar la clase Camera definida en el workspace (usa picamera2 internamente)
     cap = Camera(stream_size=(320, 240), hflip=True, vflip=True)
     cap.start_stream()
@@ -120,22 +125,44 @@ def main():
 
             limite_detectado, cantidad_pixeles = detectar_linea_verde(frame)
             
+            # Obtener lectura del sonar
+            distancia = sonar.get_distance()
+            if distancia < 0:
+                # Lectura errónea, forzar un valor alto o mantenerse ignorándolo
+                distancia = 999.0
+
             # Imprimir constantemente los píxeles (usa \r para no saturar la pantalla)
-            print(f"Píxeles verdes vistos: {cantidad_pixeles} (Umbral actual: 3000)      ", end="\r")
+            estado_sonar_str = f"| Distancia: {distancia:5.1f}cm" if distancia != 999.0 else "| Distancia: Error"
+            print(f"Px verdes: {cantidad_pixeles} (Umbral actual: 3000) {estado_sonar_str}      ", end="\r")
 
             #COMPORTAMIENTO REACTIVO
-            if limite_detectado:
-                print(f"\n¡Límite verde detectado! ({cantidad_pixeles} px) Evadiendo...")
+            if limite_detectado or (0 <= distancia <= 20):
+                if limite_detectado:
+                    print(f"\n¡Límite verde detectado! ({cantidad_pixeles} px) Evadiendo...     ")
+                else:
+                    print(f"\n¡Obstáculo inminente! ({distancia:5.1f} cm) Evadiendo...          ")
+                    
                 detener()
                 time.sleep(0.3)  # Pausa antes de la maniobra de salida
                 
                 # Retroceder + girar en vez de solo girar sobre su eje apoyado en la esquina
-                girar_aleatorio()
+                girar_aleatorio(retroceder=False)
                 
                 # Devolver el control al flujo normal
                 detener()
                 time.sleep(0.2)
                 
+            elif 20 < distancia <= 40:
+                print(f"\nObstáculo a media distancia ({distancia:5.1f} cm). Giro ligero...    ")
+                # Girar en un ángulo ligero SIN retroceder.
+                # Nota: Se usa velocidad alta (2000) porque con 1000 a veces las orugas no logran vencer la fricción,
+                # consiguiendo el "giro ligero" a través de un tiempo de giro más reducido.
+                girar_aleatorio(tiempo_min=0.2, tiempo_max=0.4, retroceder=False, velocidad_giro=1500)
+                
+                # Devolver el control al flujo normal
+                detener()
+                time.sleep(0.1)
+
             else:
                 avanzar()
 
@@ -149,6 +176,7 @@ def main():
         detener()
         motor.close()
         servo_obj.setServoStop()
+        sonar.close()
         cap.stop_stream()
         cap.close()
         print("Robot detenido de forma segura.")
