@@ -54,16 +54,11 @@ def girar_aleatorio(tiempo_min=0.5, tiempo_max=1.5, retroceder=True, velocidad_g
 
 def detectar_linea_verde(frame):
     """
-    Analiza la parte inferior de la imagen para detectar la cinta verde.
-    Retorna True si la detecta cerca, False en caso contrario.
+    Analiza TODA la imagen para detectar la cinta verde para el dataset,
+    pero evalúa solo el tercio inferior para indicar si debe activar el comportamiento reactivo (evasión).
     """
     altura, anchura = frame.shape[:2]
-
-    # 1. Definir ROI (Región de Interés): Analizamos solo el tercio inferior
-    roi = frame[int(altura * 2 / 3):altura, 0:anchura]
-
-    # 2. Convertir a HSV
-    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
     # 3. Definir rangos para el color VERDE (ajustar en el laboratorio)
     verde_bajo = np.array([40, 50, 50])
@@ -72,28 +67,36 @@ def detectar_linea_verde(frame):
     # 4. Crear una máscara que aísle solo el color verde
     mascara = cv2.inRange(hsv, verde_bajo, verde_alto)
 
-    # 5. Contar cuántos píxeles verdes hay en nuestra zona cercana
-    pixeles_verdes = cv2.countNonZero(mascara)
+    # Evaluar solo el tercio inferior para comportamiento reactivo (frenar)
+    mascara_roi = mascara[int(altura * 2 / 3):altura, 0:anchura]
+    pixeles_verdes_roi = cv2.countNonZero(mascara_roi)
+    UMBRAL_REACTIVO = 3000
+    limite_reactivo = (pixeles_verdes_roi > UMBRAL_REACTIVO)
 
-    # umbral límite de puntos verdes
-    UMBRAL = 3000
-    if pixeles_verdes > UMBRAL:
-        return True, pixeles_verdes
-    return False, pixeles_verdes
+    bboxes = []
+    # Encontrar los contornos de la línea verde en la imagen completa para YOLO
+    contornos, _ = cv2.findContours(mascara, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if contornos:
+        for contorno in contornos:
+            if cv2.contourArea(contorno) > 500: # Umbral de área para líneas individuales
+                x, y, w, h = cv2.boundingRect(contorno)
+                bboxes.append((x, y, w, h))
+                
+    return limite_reactivo, pixeles_verdes_roi, bboxes
 
 def detectar_bola_roja(frame):
     """
     Analiza la imagen para detectar una mancha roja y devuelve su Bounding Box.
     Retorna (True, area, bbox) si supera el umbral, (False, 0, None) en caso contrario.
-    bbox es una tupla (x, y, ancho, alto)
+    bbox es una tupla (x, y, ancho, alto) o una lista de tuplas
     """
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    # Rangos para el color ROJO (requiere dos rangos en OpenCV)
-    rojo_bajo1 = np.array([0, 100, 100])
-    rojo_alto1 = np.array([10, 255, 255])
+    # Aumentamos la saturación mínima a 150 y acotamos más el tono (Hue) para evitar detectar la piel
+    rojo_bajo1 = np.array([0, 150, 100])
+    rojo_alto1 = np.array([8, 255, 255])
     
-    rojo_bajo2 = np.array([160, 100, 100])
+    rojo_bajo2 = np.array([170, 150, 100])
     rojo_alto2 = np.array([180, 255, 255])
 
     mascara1 = cv2.inRange(hsv, rojo_bajo1, rojo_alto1)
@@ -105,36 +108,46 @@ def detectar_bola_roja(frame):
 
     # Umbral (Ajustar en el laboratorio según el tamaño de la bola a esa distancia)
     UMBRAL_ROJO = 1500 
+    bboxes = []
 
     if contornos:
-        # Quedarnos con el contorno más grande (asumimos que es la pelota)
-        contorno_mas_grande = max(contornos, key=cv2.contourArea)
-        area = cv2.contourArea(contorno_mas_grande)
-
-        if area > UMBRAL_ROJO:
-            # Obtener el rectángulo que envuelve a la pelota: (X, Y, Ancho, Alto)
-            x, y, w, h = cv2.boundingRect(contorno_mas_grande)
-            return True, area, (x, y, w, h)
+        for contorno in contornos:
+            area = cv2.contourArea(contorno)
+            if area > UMBRAL_ROJO:
+                # Obtener el rectángulo que envuelve a la pelota: (X, Y, Ancho, Alto)
+                x, y, w, h = cv2.boundingRect(contorno)
+                # La bola formará un cuadro. Excluimos objetos alargados (brazos/manos)
+                aspect_ratio = float(w) / h
+                if 0.5 <= aspect_ratio <= 2.0:
+                    bboxes.append((x, y, w, h))
+                
+        if bboxes:
+            return True, 0, bboxes
             
-    return False, 0, None
+    return False, 0, []
 
 
 #BUCLE PRINCIPAL
 def main():
     print("INICIANDO COMPORTAMIENTO REACTIVO Y RECOLECCIÓN DE DATASET DUAL...")
 
-    # --- CONFIGURACIÓN DEL DATASET (CLASIFICACIÓN) ---
+    # --- CONFIGURACIÓN DEL DATASET (CLASIFICACIÓN/YOLO) ---
     CARPETA_BASE = "dataset_clasificacion"
-    CARPETA_ROJA = os.path.join(CARPETA_BASE, "pelota_roja")
-    CARPETA_FONDO = os.path.join(CARPETA_BASE, "sin_pelota")
     
     # Crear las carpetas automáticamente
-    os.makedirs(CARPETA_ROJA, exist_ok=True) 
-    os.makedirs(CARPETA_FONDO, exist_ok=True) 
+    os.makedirs(CARPETA_BASE, exist_ok=True) 
     
-    MAX_FOTOS_POR_CLASE = 200
-    contador_roja = 0
-    contador_fondo = 0
+    # Encuentra el índice inicial para no sobreescribir imágenes
+    def obtener_siguiente_indice(prefijo):
+        idx = 0
+        while os.path.exists(os.path.join(CARPETA_BASE, f"{prefijo}_{idx:04d}.jpg")):
+            idx += 1
+        return idx
+
+    contador_roja = obtener_siguiente_indice("yolo_dataset")
+    contador_verde = obtener_siguiente_indice("yolo_dataset")  # Usaremos un índice global para los archivos, o simplemente autoincrementar
+
+    indice_global = max(obtener_siguiente_indice("yolo_dataset"), 0)
     
     INTERVALO_FOTOS = 0.5 # Segundos de espera mínima entre fotos
     tiempo_ultima_foto = time.time()
@@ -168,57 +181,44 @@ def main():
                 continue
 
             # --- LÓGICA DE RECOLECCIÓN DE DATASET (DOS CLASES) ---
-            # Solo ejecutamos esto si alguna de las dos carpetas aún no ha llegado a 200
-            if contador_roja < MAX_FOTOS_POR_CLASE or contador_fondo < MAX_FOTOS_POR_CLASE:
-                bola_detectada, area_roja, bbox = detectar_bola_roja(frame)
-                tiempo_actual = time.time()
-                
-                # Comprobar que ha pasado el intervalo de medio segundo
-                if (tiempo_actual - tiempo_ultima_foto) >= INTERVALO_FOTOS:
+            # Guardaremos imágenes junto con anotaciones para pelota roja (0) y linea verde (1)
+            _, _, bboxes_roja = detectar_bola_roja(frame)
+            limite_reactivo, cantidad_pixeles, bboxes_verde = detectar_linea_verde(frame)
+            
+            tiempo_actual = time.time()
+            if (tiempo_actual - tiempo_ultima_foto) >= INTERVALO_FOTOS:
+                # Si hay alguna detección en la imagen completa, guardamos un archivo de anotación YOLO
+                if bboxes_roja or bboxes_verde:
+                    nombre_base = f"yolo_dataset_{indice_global:04d}"
+                    ruta_imagen = os.path.join(CARPETA_BASE, f"{nombre_base}.jpg")
+                    ruta_txt = os.path.join(CARPETA_BASE, f"{nombre_base}.txt")
                     
-                    # CASO A: VEMOS LA PELOTA Y AÚN FALTAN FOTOS ROJAS
-                    if bola_detectada and contador_roja < MAX_FOTOS_POR_CLASE:
-                        nombre_base = f"bola_{contador_roja:03d}"
+                    cv2.imwrite(ruta_imagen, frame)
+                    alto_img, ancho_img = frame.shape[:2]
+                    
+                    with open(ruta_txt, "w") as f:
+                        if bboxes_roja:
+                            for bbox in bboxes_roja:
+                                x, y, w, h = bbox
+                                x_centro_norm = (x + (w / 2.0)) / ancho_img
+                                y_centro_norm = (y + (h / 2.0)) / alto_img
+                                ancho_norm = w / float(ancho_img)
+                                alto_norm = h / float(alto_img)
+                                f.write(f"0 {x_centro_norm:.6f} {y_centro_norm:.6f} {ancho_norm:.6f} {alto_norm:.6f}\n")
                         
-                        # 1. Guardar Imagen JPG
-                        ruta_imagen = os.path.join(CARPETA_ROJA, f"{nombre_base}.jpg")
-                        cv2.imwrite(ruta_imagen, frame)
-                        
-                        # 2. Guardar Anotación YOLO en TXT (Mantenemos esto por si decides usar Detección de Objetos en el futuro)
-                        x, y, w, h = bbox
-                        alto_img, ancho_img = frame.shape[:2]
-                        x_centro_norm = (x + (w / 2.0)) / ancho_img
-                        y_centro_norm = (y + (h / 2.0)) / alto_img
-                        ancho_norm = w / float(ancho_img)
-                        alto_norm = h / float(alto_img)
-                        
-                        ruta_txt = os.path.join(CARPETA_ROJA, f"{nombre_base}.txt")
-                        with open(ruta_txt, "w") as f:
-                            f.write(f"0 {x_centro_norm:.6f} {y_centro_norm:.6f} {ancho_norm:.6f} {alto_norm:.6f}\n")
+                        if bboxes_verde:
+                            for bbox in bboxes_verde:
+                                x, y, w, h = bbox
+                                x_centro_norm = (x + (w / 2.0)) / ancho_img
+                                y_centro_norm = (y + (h / 2.0)) / alto_img
+                                ancho_norm = w / float(ancho_img)
+                                alto_norm = h / float(alto_img)
+                                f.write(f"1 {x_centro_norm:.6f} {y_centro_norm:.6f} {ancho_norm:.6f} {alto_norm:.6f}\n")
                             
-                        contador_roja += 1
-                        tiempo_ultima_foto = tiempo_actual
-                        print(f"\n[DATASET] PELOTA guardada: {contador_roja}/{MAX_FOTOS_POR_CLASE}")
-
-                    # CASO B: NO VEMOS LA PELOTA Y AÚN FALTAN FOTOS DE FONDO
-                    elif not bola_detectada and contador_fondo < MAX_FOTOS_POR_CLASE:
-                        nombre_base = f"fondo_{contador_fondo:03d}"
-                        
-                        # Guardar SOLO la imagen JPG (sin archivo de texto)
-                        ruta_imagen = os.path.join(CARPETA_FONDO, f"{nombre_base}.jpg")
-                        cv2.imwrite(ruta_imagen, frame)
-                        
-                        contador_fondo += 1
-                        tiempo_ultima_foto = tiempo_actual
-                        print(f"\n[DATASET] FONDO guardado: {contador_fondo}/{MAX_FOTOS_POR_CLASE}")
-
-                    # COMPROBAR SI HEMOS TERMINADO TODO
-                    if contador_roja == MAX_FOTOS_POR_CLASE and contador_fondo == MAX_FOTOS_POR_CLASE:
-                        print("\n[DATASET] ¡ÉXITO! Dataset completo con 200 fotos de cada clase.")
+                    print(f"\n[DATASET] Imagen y {len(bboxes_roja) + len(bboxes_verde)} anotación(es) guardadas: {nombre_base}")
+                    indice_global += 1
+                    tiempo_ultima_foto = tiempo_actual
             # -----------------------------------------------------------
-
-            # --- LÓGICA ORIGINAL DE PERCEPCIÓN ---
-            limite_detectado, cantidad_pixeles = detectar_linea_verde(frame)
             
             # Obtener lectura del sonar
             distancia = sonar.get_distance()
@@ -230,8 +230,8 @@ def main():
             print(f"Px verdes: {cantidad_pixeles} (Umbral actual: 3000) {estado_sonar_str}      ", end="\r")
 
             # --- COMPORTAMIENTO REACTIVO ---
-            if limite_detectado or (0 <= distancia <= 20):
-                if limite_detectado:
+            if limite_reactivo or (0 <= distancia <= 20):
+                if limite_reactivo:
                     print(f"\n¡Límite verde detectado! ({cantidad_pixeles} px) Evadiendo...     ")
                 else:
                     print(f"\n¡Obstáculo inminente! ({distancia:5.1f} cm) Evadiendo...          ")
