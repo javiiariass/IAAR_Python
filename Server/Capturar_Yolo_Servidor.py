@@ -29,7 +29,7 @@ def detectar_linea_verde(frame):
     contornos, _ = cv2.findContours(mascara, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if contornos:
         for contorno in contornos:
-            if cv2.contourArea(contorno) > 500:
+            if cv2.contourArea(contorno) > 700:
                 x, y, w, h = cv2.boundingRect(contorno)
                 bboxes.append((x, y, w, h))
 
@@ -53,7 +53,9 @@ def detectar_bola_roja(frame):
             if area > UMBRAL_ROJO:
                 x, y, w, h = cv2.boundingRect(contorno)
                 aspect_ratio = float(w) / h
-                if 0.5 <= aspect_ratio <= 2.0:
+                # Ampliamos la tolerancia geométrica (0.2 a 5.0) para unificar la detección 
+                # con el script autónomo y capturar bolas ligeramente deformes o ensombrecidas
+                if 0.2 <= aspect_ratio <= 5.0:
                     bboxes.append((x, y, w, h))
     if bboxes:
         return True, 0, bboxes
