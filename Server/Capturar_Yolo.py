@@ -138,7 +138,7 @@ def procesar_captura_yolo(frame_capturado, ultima_foto_time, cooldown_fotos):
 
     tiempo_actual = time.time()
     if detecciones and (tiempo_actual - ultima_foto_time > cooldown_fotos):
-        guardar_imagen_yolo(frame_capturado, detecciones, prefix="auto_yolo")
+        guardar_imagen_yolo(frame_capturado, detecciones, prefix="movimiento_auto")
         return tiempo_actual
     return ultima_foto_time
 
@@ -178,7 +178,7 @@ def main():
                 if linea_detectada:
                     for bbox in bboxes_linea: detecciones_manuales.append((1, bbox))
                     
-                guardar_imagen_yolo(frame, detecciones_manuales, prefix="manual_yolo")
+                guardar_imagen_yolo(frame, detecciones_manuales, prefix="movimiento_manual")
                 print(f"\n[MANUAL] Captura de fondo/manual guardada con {len(detecciones_manuales)} detecciones.    ")
                 ultima_foto_time = time.time()
             

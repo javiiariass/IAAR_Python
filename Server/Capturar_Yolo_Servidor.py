@@ -150,7 +150,7 @@ class CapturarYoloServidorSSH:
         if not detecciones:
             print("- Ningún objeto detectado. Guardando sin anotaciones (como imagen de fondo).")
 
-        guardar_imagen_yolo(frame_capturado, detecciones, prefix="yolo_manual")
+        guardar_imagen_yolo(frame_capturado, detecciones, prefix="estatico_manual")
 
     def threading_video_send(self):
         self.camera.start_stream()
