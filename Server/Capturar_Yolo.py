@@ -2,9 +2,17 @@ import cv2
 import numpy as np
 import time
 import os
-from camera import Camera
+import random
 
-def detectar_linea_verde(frame):
+from camera import Camera
+from motor import tankMotor
+from servo import Servo
+from ultrasonic import Ultrasonic
+
+# ==========================================
+# FUNCIONES PARA EL DATASET YOLO (TODO EL FRAME)
+# ==========================================
+def detectar_linea_verde_yolo(frame):
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     verde_bajo = np.array([40, 50, 50])
     verde_alto = np.array([85, 255, 255])
@@ -14,16 +22,14 @@ def detectar_linea_verde(frame):
     contornos, _ = cv2.findContours(mascara, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if contornos:
         for contorno in contornos:
-            # Comprobar que realmente tiene un tamaño mínimo
-            if cv2.contourArea(contorno) > 500: # Umbral de área para líneas individuales
+            if cv2.contourArea(contorno) > 700:
                 x, y, w, h = cv2.boundingRect(contorno)
                 bboxes.append((x, y, w, h))
                 
     return (len(bboxes) > 0), 0, bboxes
 
-def detectar_bola_roja(frame):
+def detectar_bola_roja_yolo(frame):
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    # Aumentamos la saturación mínima a 150 y acotamos más el tono (Hue) para evitar detectar la piel
     rojo_bajo1 = np.array([0, 150, 100])
     rojo_alto1 = np.array([8, 255, 255])
     rojo_bajo2 = np.array([170, 150, 100])
@@ -39,20 +45,15 @@ def detectar_bola_roja(frame):
             area = cv2.contourArea(contorno)
             if area > UMBRAL_ROJO:
                 x, y, w, h = cv2.boundingRect(contorno)
-                # Calculamos la proporción entre el ancho y la altura, brazos/manos son alargados
-                # pero una bola encaja en un cuadrado (proporción cercana a 1.0)
                 aspect_ratio = float(w) / h
-                if 0.5 <= aspect_ratio <= 2.0:
+                # Ampliamos mucho la tolerancia (de 0.5-2.0 a 0.2-5.0) para detectar 
+                # pelotas difuminadas/ovaladas por el movimiento de la cámara
+                if 0.2 <= aspect_ratio <= 5.0:
                     bboxes.append((x, y, w, h))
-    if bboxes:
-        return True, 0, bboxes
-    return False, 0, []
+    return (len(bboxes) > 0), 0, bboxes
 
-def guardar_imagen_yolo(frame, detecciones, base_dir="dataset_clasificacion", prefix="manual_yolo"):
-    """Guarda imagen y etiqueta YOLO asegurando no sobreescribir archivos existentes con múltiples detecciones posibles."""
+def guardar_imagen_yolo(frame, detecciones, base_dir="dataset_clasificacion", prefix="auto_yolo"):
     os.makedirs(base_dir, exist_ok=True)
-    
-    # Encontrar siguiente índice disponible
     idx = 0
     while True:
         nombre_base = f"{prefix}_{idx:04d}"
@@ -63,8 +64,6 @@ def guardar_imagen_yolo(frame, detecciones, base_dir="dataset_clasificacion", pr
         idx += 1
         
     cv2.imwrite(ruta_imagen, frame)
-    
-    # Siempre creamos el archivo de texto, y añadimos todas las detecciones que hayamos encontrado
     with open(ruta_txt, "w") as f:
         alto_img, ancho_img = frame.shape[:2]
         for class_id, bbox in detecciones:
@@ -78,11 +77,82 @@ def guardar_imagen_yolo(frame, detecciones, base_dir="dataset_clasificacion", pr
             
     print(f"Imagen y {len(detecciones)} anotaciones guardadas en {nombre_base}")
 
+# ==========================================
+# FUNCIONES DE MOVIMIENTO (COMPORTAMIENTO REACTIVO)
+# ==========================================
+
+motor = tankMotor()
+servo_obj = Servo()
+
+def levantar_gancho():
+    servo_obj.setServoAngle('1', 140)
+    time.sleep(0.5)
+
+def detener():
+    motor.setMotorModel(0, 0)
+
+def avanzar(velocidad=1000):
+    factor_correccion = 1.2
+    motor.setMotorModel(-velocidad, -velocidad*factor_correccion)
+
+def girar_aleatorio(tiempo_min=0.5, tiempo_max=1.5, retroceder=True, velocidad_giro=1500):
+    velocidad_retroceso = 1200
+    if retroceder:
+        motor.setMotorModel(velocidad_retroceso, velocidad_retroceso)
+        time.sleep(0.3)
+        detener()
+        time.sleep(0.1)
+
+    direccion = random.choice(["izquierda", "derecha"])
+    if direccion == "derecha":
+        motor.setMotorModel(-velocidad_giro, velocidad_giro)
+    else:
+        motor.setMotorModel(velocidad_giro, -velocidad_giro)
+
+    tiempo_giro = random.uniform(tiempo_min, tiempo_max)
+    time.sleep(tiempo_giro)
+    detener()
+
+def evaluar_linea_reactiva(frame):
+    altura, anchura = frame.shape[:2]
+    roi = frame[int(altura * 2 / 3):altura, 0:anchura]
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    verde_bajo = np.array([40, 50, 50])
+    verde_alto = np.array([85, 255, 255])
+    mascara = cv2.inRange(hsv, verde_bajo, verde_alto)
+    
+    pixeles_verdes = cv2.countNonZero(mascara)
+    if pixeles_verdes > 3000:
+        return True, pixeles_verdes
+    return False, pixeles_verdes
+
+def procesar_captura_yolo(frame_capturado, ultima_foto_time, cooldown_fotos):
+    detecciones = []
+    bola_detectada, _, bboxes_bola = detectar_bola_roja_yolo(frame_capturado)
+    if bola_detectada:
+        for bbox in bboxes_bola: detecciones.append((0, bbox))
+
+    linea_detectada, _, bboxes_linea = detectar_linea_verde_yolo(frame_capturado)
+    if linea_detectada:
+        for bbox in bboxes_linea: detecciones.append((1, bbox))
+
+    tiempo_actual = time.time()
+    if detecciones and (tiempo_actual - ultima_foto_time > cooldown_fotos):
+        guardar_imagen_yolo(frame_capturado, detecciones, prefix="auto_yolo")
+        return tiempo_actual
+    return ultima_foto_time
+
 def main():
-    print("Script para generar una nueva imagen YOLO sin sobreescribir...")
+    print("Script (con GUI) Autónomo: Conducción + YOLO automático...")
     cap = Camera(stream_size=(320, 240), hflip=True, vflip=True)
+    sonar = Ultrasonic()
     cap.start_stream()
+    
+    levantar_gancho()
     time.sleep(1)
+
+    ultima_foto_time = 0
+    cooldown_fotos = 2.5 # Aumentado el cooldown a 2.5 segs. para tener variedad entre fotos
 
     try:
         while True:
@@ -92,36 +162,68 @@ def main():
             np_arr = np.frombuffer(frame_bytes, np.uint8)
             frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
             
-            cv2.imshow("Camara - Presiona 'c' para capturar la imagen, 'q' para salir", frame)
+            cv2.imshow("Camara - Modo Autonomo YOLO ('q' para salir, 'c' foto manual)", frame)
             key = cv2.waitKey(1) & 0xFF
             
             if key == ord('q'):
                 break
             elif key == ord('c'):
-                print("Capturando imagen y detectando clases...")
-                detecciones = []
+                # Captura manual: forzamos guardar SIEMPRE (incluso sin objetos para imágenes de fondo)
+                detecciones_manuales = []
+                bola_detectada, _, bboxes_bola = detectar_bola_roja_yolo(frame)
+                if bola_detectada:
+                    for bbox in bboxes_bola: detecciones_manuales.append((0, bbox))
                 
-                bola_detectada, _, bboxes_bola = detectar_bola_roja(frame)
-                if bola_detectada and bboxes_bola:
-                    print(f"- {len(bboxes_bola)} Pelota(s) rojas detectada(s)!")
-                    for bbox in bboxes_bola:
-                        detecciones.append((0, bbox))
+                linea_detectada, _, bboxes_linea = detectar_linea_verde_yolo(frame)
+                if linea_detectada:
+                    for bbox in bboxes_linea: detecciones_manuales.append((1, bbox))
                     
-                linea_detectada, _, bboxes_linea = detectar_linea_verde(frame)
-                if linea_detectada and bboxes_linea:
-                    print(f"- {len(bboxes_linea)} Línea(s) verde(s) detectada(s)!")
-                    for bbox in bboxes_linea:
-                        detecciones.append((1, bbox))
+                guardar_imagen_yolo(frame, detecciones_manuales, prefix="manual_yolo")
+                print(f"\n[MANUAL] Captura de fondo/manual guardada con {len(detecciones_manuales)} detecciones.    ")
+                ultima_foto_time = time.time()
+            
+            # 1. EVALUAR YOLO Y GUARDAR AUTOMÁTICAMENTE
+            ultima_foto_time = procesar_captura_yolo(frame, ultima_foto_time, cooldown_fotos)
+            
+            # 2. EVALUAR PELIGRO PARA CONDUCIR (solo ROI y sonar)
+            distancia = sonar.get_distance()
+            if distancia < 0: distancia = 999.0
+            limite_detectado, cantidad_pixeles = evaluar_linea_reactiva(frame)
+
+            # Imprimir constantemente los píxeles (usa \r para no saturar la pantalla)
+            estado_sonar_str = f"| Distancia: {distancia:5.1f}cm" if distancia != 999.0 else "| Distancia: Error"
+            print(f"Px verdes: {cantidad_pixeles} (Umbral actual: 3000) {estado_sonar_str}      ", end="\r")
+
+            if limite_detectado or (0 <= distancia <= 20):
+                if limite_detectado:
+                    print(f"\n¡Límite verde detectado! ({cantidad_pixeles} px) Evadiendo...     ")
+                else:
+                    print(f"\n¡Obstáculo inminente! ({distancia:5.1f} cm) Evadiendo...          ")
                     
-                if not detecciones:
-                    print("- Ningún objeto detectado. Guardando sin anotaciones (como imagen de fondo).")
-                    
-                guardar_imagen_yolo(frame, detecciones, prefix="yolo_manual")
+                detener()
+                time.sleep(0.3)
+                girar_aleatorio(retroceder=False)
+                detener()
+                time.sleep(0.2)
+                
+            elif 20 < distancia <= 40:
+                print(f"\nObstáculo a media distancia ({distancia:5.1f} cm). Giro ligero...    ")
+                girar_aleatorio(tiempo_min=0.2, tiempo_max=0.4, retroceder=False, velocidad_giro=1500)
+                detener()
+                time.sleep(0.1)
+
+            else:
+                avanzar()
 
     finally:
+        detener()
+        motor.close()
+        servo_obj.setServoStop()
+        sonar.close()
         cap.stop_stream()
         cap.close()
         cv2.destroyAllWindows()
+        print("Robot detenido de forma segura.")
 
 if __name__ == '__main__':
     main()
