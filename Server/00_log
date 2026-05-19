@@ -1,0 +1,47 @@
+PRACTICA_3_con_sonar_Probando_bola.py  PRACTICA_3_DATASET_ANOTACIONES.py      PRACTICA_3_DATASET.py
+practica@raspberrypi:~/Freenove_Tank_Robot_Kit_for_Raspberry_Pi/Code/Server $ sudo python PRACTICA_2
+PRACTICA_2_con_sonar.py         PRACTICA_2_solo_infrarrojos.py  PRACTICA_2_solo_vision.py
+PRACTICA_2.py                   PRACTICA_2_solo_sonar.py
+practica@raspberrypi:~/Freenove_Tank_Robot_Kit_for_Raspberry_Pi/Code/Server $ sudo python PRACTICA_2_con_sonar.py
+INICIANDO COMPORTAMIENTO REACTIVO...
+Using gpiozero_ultrasonic
+[0:11:20.912175971] [2287]  INFO Camera camera_manager.cpp:340 libcamera v0.6.0+rpt20251202
+[0:11:20.946556035] [2296]  INFO IPAProxy ipa_proxy.cpp:180 Using tuning file /usr/share/libcamera/ipa/rpi/vc4/ov5647.json
+[0:11:20.953928727] [2296]  INFO Camera camera_manager.cpp:223 Adding camera '/base/soc/i2c0mux/i2c@1/ov5647@36' for pipeline handler rpi/vc4
+[0:11:20.954006092] [2296]  INFO RPI vc4.cpp:445 Registered camera /base/soc/i2c0mux/i2c@1/ov5647@36 to Unicam device /dev/media2 and ISP device /dev/media0
+[0:11:20.954061717] [2296]  INFO RPI pipeline_base.cpp:1111 Using configuration file '/usr/share/libcamera/pipeline/rpi/vc4/rpi_apps.yaml'
+[0:11:20.961860342] [2287]  INFO Camera camera.cpp:1215 configuring streams: (0) 640x480-XBGR8888/sRGB (1) 640x480-SGRBG10_CSI2P/RAW
+[0:11:20.962347510] [2296]  INFO RPI vc4.cpp:620 Sensor: /base/soc/i2c0mux/i2c@1/ov5647@36 - Selected sensor format: 640x480-SGRBG10_1X10/RAW - Selected unicam format: 640x480-pgAA/RAW
+[0:11:20.971884028] [2287]  INFO Camera camera.cpp:1215 configuring streams: (0) 320x240-XBGR8888/SMPTE170M/Rec709/None/Full (1) 640x480-SGRBG10_CSI2P/RAW
+[0:11:20.972368864] [2296]  INFO RPI vc4.cpp:620 Sensor: /base/soc/i2c0mux/i2c@1/ov5647@36 - Selected sensor format: 640x480-SGRBG10_1X10/RAW - Selected unicam format: 640x480-pgAA/RAW
+Px verdes: 81 (Umbral actual: 3000) | Distancia:  39.7cm
+Obstáculo a media distancia ( 39.7 cm). Giro ligero...
+Px verdes: 129 (Umbral actual: 3000) | Distancia:  39.2cm
+Obstáculo a media distancia ( 39.2 cm). Giro ligero...
+Px verdes: 1208 (Umbral actual: 3000) | Distancia:  30.7cm
+Obstáculo a media distancia ( 30.7 cm). Giro ligero...
+Px verdes: 2356 (Umbral actual: 3000) | Distancia:  30.5cm
+Obstáculo a media distancia ( 30.5 cm). Giro ligero...
+Px verdes: 2273 (Umbral actual: 3000) | Distancia:  30.2cm
+Obstáculo a media distancia ( 30.2 cm). Giro ligero...
+^C verdes: 3 (Umbral actual: 3000) | Distancia:  50.0cm
+Programa interrumpido por el usuario.
+Robot detenido de forma segura.
+practica@raspberrypi:~/Freenove_Tank_Robot_Kit_for_Raspberry_Pi/Code/Server $ sudo python Capturar_Yolo.py
+Script (con GUI) Autónomo: Conducción + YOLO automático...
+[0:11:42.779224818] [2318]  INFO Camera camera_manager.cpp:340 libcamera v0.6.0+rpt20251202
+[0:11:42.811056944] [2325]  INFO IPAProxy ipa_proxy.cpp:180 Using tuning file /usr/share/libcamera/ipa/rpi/vc4/ov5647.json
+[0:11:42.817667099] [2325]  INFO Camera camera_manager.cpp:223 Adding camera '/base/soc/i2c0mux/i2c@1/ov5647@36' for pipeline handler rpi/vc4
+[0:11:42.817756020] [2325]  INFO RPI vc4.cpp:445 Registered camera /base/soc/i2c0mux/i2c@1/ov5647@36 to Unicam device /dev/media2 and ISP device /dev/media0
+[0:11:42.817811665] [2325]  INFO RPI pipeline_base.cpp:1111 Using configuration file '/usr/share/libcamera/pipeline/rpi/vc4/rpi_apps.yaml'
+[0:11:42.825267901] [2318]  INFO Camera camera.cpp:1215 configuring streams: (0) 640x480-XBGR8888/sRGB (1) 640x480-SGRBG10_CSI2P/RAW
+[0:11:42.825766872] [2325]  INFO RPI vc4.cpp:620 Sensor: /base/soc/i2c0mux/i2c@1/ov5647@36 - Selected sensor format: 640x480-SGRBG10_1X10/RAW - Selected unicam format: 640x480-pgAA/RAW
+Using gpiozero_ultrasonic
+[0:11:42.837403775] [2318]  INFO Camera camera.cpp:1215 configuring streams: (0) 320x240-XBGR8888/SMPTE170M/Rec709/None/Full (1) 640x480-SGRBG10_CSI2P/RAW
+[0:11:42.837845675] [2325]  INFO RPI vc4.cpp:620 Sensor: /base/soc/i2c0mux/i2c@1/ov5647@36 - Selected sensor format: 640x480-SGRBG10_1X10/RAW - Selected unicam format: 640x480-pgAA/RAW
+qt.qpa.xcb: could not connect to display
+qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "" even though it was found.
+This application failed to start because no Qt platform plugin could be initialized. Reinstalling the application may fix this problem.
+
+Available platform plugins are: eglfs, linuxfb, minimal, minimalegl, offscreen, vnc, wayland-egl, wayland, wayland-xcomposite-egl, xcb.
+

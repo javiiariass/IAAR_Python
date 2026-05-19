@@ -1,2 +1,2 @@
 0=bola_roja
-1=lineaverde
+1=linea_verde
