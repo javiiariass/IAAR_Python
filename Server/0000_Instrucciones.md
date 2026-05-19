@@ -1,3 +1,7 @@
+# Info para final
+- distancia sonar para pelota [6-7cm]
+
+
 ### Resumen de Cambios
 
 1.  **Algoritmos de detección unificados:** Los tres scripts usan ahora el mismo umbral de área para la línea verde (`> 700`) y las mismas tolerancias de proporción (`aspect_ratio` entre `0.2` y `5.0`) para detectar bolas difuminadas.

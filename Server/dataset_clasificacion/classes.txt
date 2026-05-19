@@ -16,4 +16,3 @@ cavity
 bola_roja
 0=bola_roja
 1=linea_verde
-1
