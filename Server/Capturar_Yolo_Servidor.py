@@ -109,7 +109,7 @@ class CapturarYoloServidorSSH:
         print("\n\n====== GENERADOR DE YOLO VÍA SSH Y CLIENTE DE WINDOWS ======")
         print("1. Abre la aplicación de Windows de Freenove (Tank.exe / Client).")
         print("2. Escribe la IP de la Raspberry Pi y pulsa Connect para ver el vídeo.")
-        print("3. Para HACER UNA FOTO Y ETIQUETAR, simplemente pulsa Enter aquí en el terminal SSH.")
+        print("3. Para HACER UNA FOTO Y ETIQUETAR, pulsa 'd' y Enter aquí en el terminal SSH.")
         print("4. Escribe 'q' y pulsa Enter para salir del programa.")
         print("============================================================\n")
         
@@ -119,7 +119,7 @@ class CapturarYoloServidorSSH:
                 val = input("")
                 if val.lower() == 'q':
                     break
-                else:
+                elif val.lower() == 'd':
                     self.procesar_captura()
         except KeyboardInterrupt:
             pass

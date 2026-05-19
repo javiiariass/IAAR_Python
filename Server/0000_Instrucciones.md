@@ -12,10 +12,10 @@
 *   **Capturar_Yolo.py (Modo Autónomo):** El robot conduce solo evadiendo la línea reactiva y captura fotos automáticamente (cada 2.5s) si hay objetos. Permite fotos manuales.
     *   **Imprime:** `movimiento_auto_000x` y `movimiento_manual_000x`.
 
-*   **Capturar_Yolo_Movimiento_Manual.py (Modo Teclas):** Tú conduces el robot manteniendo 'W' y 'S' desde la ventana de la cámara, pulsando 'C' para disparar capturas mientras estás en movimiento.
+*   **Capturar_Yolo_Movimiento_Manual.py (Modo Teclas):** Tú conduces el robot manteniendo 'W' y 'S' desde la ventana de la cámara, pulsando 'd' para disparar capturas mientras estás en movimiento.
     *   **Imprime:** `movimiento_manual_000x`.
 
-*   **Capturar_Yolo_Servidor.py (Modo CLI/Estático):** Script quieto que envía la señal a la app de VNC/PC. Genera fotos al pulsar Enter desde la consola SSH.
+*   **Capturar_Yolo_Servidor.py (Modo CLI/Estático):** Script quieto que envía la señal a la app de VNC/PC. Genera fotos al pulsar la tecla 'd' y Enter desde la consola SSH.
     *   **Imprime:** `estatico_manual_000x`.
 
 *   **Grabar_Video_Autonomo.py (Modo Grabación Autónomo):** Mantiene el comportamiento reactivo y la conducción autónoma, pero en lugar de capturar imágenes para el dataset, graba frame a frame todo el recorrido limpio (sin cajas dibujadas encima) en vídeo. Es ***importantísimo*** cerrar el proceso dándole a la tecla `q` para que el guardado se cierre correctamente sin corromperse.
@@ -23,7 +23,7 @@
 
 
 ### QUÉ HACER
-- **importante**. Las fotos "vacías" (sin pelota y sin linea) solo se toman en manual (pulsando la 'c'). Deberiamos tener entre un 10 y un 15% de fotos de este tipo para evitar falsos positivos
+- **importante**. Las fotos "vacías" (sin pelota y sin linea) solo se toman en manual (pulsando la 'd'). Deberiamos tener entre un 10 y un 15% de fotos de este tipo para evitar falsos positivos
 
 ### Consideraciones clave para tomar el dataset en una sola sesión:
 

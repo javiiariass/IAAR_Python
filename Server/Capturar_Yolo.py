@@ -149,7 +149,7 @@ def main():
     print("\n\n====== MODO AUTÓNOMO YOLO (C/ SERVIDOR VÍDEO) ======")
     print("1. El robot conduce solo y captura automáticamente.")
     print("2. Abre la app de Freenove (Client) en tu PC y conecta a la IP para ver el vídeo.")
-    print("3. Para HACER UNA FOTO DE FONDO MANUAL, pulsa Enter aquí.")
+    print("3. Para HACER UNA FOTO DE FONDO MANUAL, pulsa 'd' y Enter aquí.")
     print("4. Escribe 'q' y Enter para salir.\n")
 
     tcp_server = TankServer()
@@ -245,7 +245,7 @@ def main():
             if val.lower() == 'q':
                 estado["corriendo"] = False
                 break
-            else:
+            elif val.lower() == 'd':
                 estado["captura_manual"] = True
     except KeyboardInterrupt:
         estado["corriendo"] = False

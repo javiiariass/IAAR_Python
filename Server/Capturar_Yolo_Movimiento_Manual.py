@@ -2,6 +2,9 @@ import cv2
 import numpy as np
 import time
 import os
+import threading
+import struct
+from server import TankServer
 
 from camera import Camera
 from motor import tankMotor
@@ -99,35 +102,47 @@ def main():
     print("========================================")
     print(" CONDUCCIÓN MANUAL + TECLA CAPTURA YOLO ")
     print("========================================")
-    print(" MANTEN 'w' para AVANZAR")
-    print(" MANTEN 's' para RETROCEDER")
-    print(" PULSA 'c' para TOMAR FOTO (puedes pulsarla mientras conduces)")
-    print(" PULSA 'q' para SALIR")
+    print("1. Abre la app de Freenove (Client) en tu PC y conecta a la IP para ver el vídeo.")
+    print("2. MANTEN 'w'/Enter para AVANZAR (Por consola)")
+    print("3. PULSA 'd'/Enter para TOMAR FOTO")
+    print("4. PULSA 'q'/Enter para SALIR")
     print("========================================")
+    
+    tcp_server = TankServer()
+    tcp_server.startTcpServer()
     
     cap = Camera(stream_size=(320, 240), hflip=True, vflip=True)
     cap.start_stream()
     
     levantar_gancho()
     
-    last_move_time = 0
-    is_moving = False
-
-    try:
-        while True:
+    estado = {"corriendo": True, "comando": ""}
+    
+    def hilo_camara():
+        while estado["corriendo"]:
             frame_bytes = cap.get_frame()
-            if frame_bytes is None: continue
-            
+            if frame_bytes is None: 
+                time.sleep(0.01)
+                continue
+                
+            # --- TCP SERVER VIDEO STREAMING ---
+            if tcp_server.isVideoServerConnected():
+                lenFrame = len(frame_bytes)
+                lengthBin = struct.pack('<I', lenFrame)
+                try:
+                    tcp_server.sendDataToVideoClient(lengthBin)
+                    tcp_server.sendDataToVideoClient(frame_bytes)
+                except Exception:
+                    pass
+
             np_arr = np.frombuffer(frame_bytes, np.uint8)
             frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
             
-            cv2.imshow("Conduccion Manual + YOLO ('w','s','c','q')", frame)
-            
-            # OpenCV waitKey con refresco rápido. Atrapa las teclas repetidas por el OS
-            key = cv2.waitKey(20) & 0xFF
-            
+            comando = estado["comando"]
+            estado["comando"] = ""
+
             # 1. EVALUAR CAPTURA MANUAL
-            if key == ord('c'):
+            if comando == "d":
                 detecciones_manuales = []
                 bola_detectada, _, bboxes_bola = detectar_bola_roja_yolo(frame)
                 if bola_detectada:
@@ -139,39 +154,45 @@ def main():
                     
                 guardar_imagen_yolo(frame, detecciones_manuales, prefix="movimiento_manual")
                 print(f"[FOTO MANUAL] Captura guardada con {len(detecciones_manuales)} detecciones.      ")
-                
-                # Le damos un margen extra de tiempo al motor para que no dé un tirón
-                # al solapar la tecla 'c' con las teclas de conducción
-                if is_moving:
-                    last_move_time = time.time()
             
             # 2. EVALUAR CONDUCCIÓN
-            elif key == ord('w'):
+            elif comando == "w":
                 avanzar()
-                last_move_time = time.time()
-                is_moving = True
-            elif key == ord('s'):
-                retroceder()
-                last_move_time = time.time()
-                is_moving = True
-            elif key == ord('q'):
-                break
-
-            # 3. DETENER SI EL USUARIO HA SOLTADO LA TECLA
-            # Si hace más de 0.15 segundos que OpenCV no registra la tecla 'w' o 's',
-            # consideramos que el usuario ha dejado de pulsarla y detenemos al robot.
-            if is_moving and (time.time() - last_move_time > 0.15):
+                time.sleep(0.3)
                 detener()
-                is_moving = False
+            elif comando == "s":
+                retroceder()
+                time.sleep(0.3)
+                detener()
+                
+    t = threading.Thread(target=hilo_camara)
+    t.start()
 
+    try:
+        while True:
+            val = input("")
+            if val.lower() == 'q':
+                estado["corriendo"] = False
+                break
+            elif val.lower() == 'd':
+                 estado["comando"] = "d"
+            elif val.lower() == 'w':
+                 estado["comando"] = "w"
+            elif val.lower() == 's':
+                 estado["comando"] = "s"
+
+    except KeyboardInterrupt:
+        estado["corriendo"] = False
     finally:
+        estado["corriendo"] = False
+        tcp_server.stopTcpServer()
+        t.join(timeout=1.0)
         detener()
         motor.close()
         servo_obj.setServoStop()
         cap.stop_stream()
         cap.close()
-        cv2.destroyAllWindows()
-        print("Robot detenido de forma segura.")
+        print("\nRobot detenido de forma segura.")
 
 if __name__ == '__main__':
     main()
