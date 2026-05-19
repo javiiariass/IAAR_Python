@@ -3,7 +3,10 @@ import numpy as np
 import time
 import os
 import random
+import threading
+import struct
 from datetime import datetime
+from server import TankServer
 
 from camera import Camera
 from motor import tankMotor
@@ -62,6 +65,12 @@ def main():
     print("==================================================")
     print(" GRABACIÓN DE VÍDEO CON NAVEGACIÓN AUTÓNOMA ")
     print("==================================================")
+    print("1. El robot conduce solo y GRABA TODO EN VÍDEO AVI.")
+    print("2. Abre la app de Freenove (Client) en tu PC y conecta a la IP para ver el vídeo.")
+    print("3. Escribe 'q' y pulsa Enter para salir y GUARDAR EL VÍDEO correctamente.\n")
+
+    tcp_server = TankServer()
+    tcp_server.startTcpServer()
     
     ancho_frame, alto_frame = 320, 240
     cap = Camera(stream_size=(ancho_frame, alto_frame), hflip=True, vflip=True)
@@ -78,29 +87,36 @@ def main():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     ruta_video = os.path.join(directorio_videos, f"test_yolo_{timestamp}.avi")
     
-    # Codec de vídeo XVID (Suele funcionar estupendamente sin codecs raros)
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    fps_estimados = 12.0 # Ajustado aprox a la latencia real del bucle WiFi/Raspberry
+    fps_estimados = 12.0
     out_video = cv2.VideoWriter(ruta_video, fourcc, fps_estimados, (ancho_frame, alto_frame))
 
     print(f"Guardando vídeo en: {ruta_video}")
-    print("Presiona la tecla 'q' en la ventana de vídeo para detener y guardar.")
 
-    try:
-        while True:
+    estado = {"corriendo": True}
+
+    def hilo_conduccion():
+        while estado["corriendo"]:
             frame_bytes = cap.get_frame()
-            if frame_bytes is None: continue
-            
+            if frame_bytes is None: 
+                time.sleep(0.01)
+                continue
+                
+            # --- TCP SERVER VIDEO STREAMING ---
+            if tcp_server.isVideoServerConnected():
+                lenFrame = len(frame_bytes)
+                lengthBin = struct.pack('<I', lenFrame)
+                try:
+                    tcp_server.sendDataToVideoClient(lengthBin)
+                    tcp_server.sendDataToVideoClient(frame_bytes)
+                except Exception:
+                    pass
+
             np_arr = np.frombuffer(frame_bytes, np.uint8)
             frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
             
             # GUARDAR EL FRAME EN EL VÍDEO (.avi)
             out_video.write(frame)
-            
-            cv2.imshow("Grabando Escenario (pulsa 'q' para salir)", frame)
-            
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
             
             # --- COMPORTAMIENTO REACTIVO ---
             distancia = sonar.get_distance()
@@ -125,15 +141,28 @@ def main():
             else:
                 avanzar()
 
+    t = threading.Thread(target=hilo_conduccion)
+    t.start()
+
+    try:
+        while True:
+            val = input("")
+            if val.lower() == 'q':
+                estado["corriendo"] = False
+                break
+    except KeyboardInterrupt:
+        estado["corriendo"] = False
     finally:
+        estado["corriendo"] = False
+        tcp_server.stopTcpServer()
+        t.join(timeout=1.0)
         detener()
-        out_video.release() # CRÍTICO: Cierra y finaliza el archivo de vídeo para que no se corrompa
+        out_video.release() # CRÍTICO: Cierra y finaliza el archivo de vídeo
         motor.close()
         servo_obj.setServoStop()
         sonar.close()
         cap.stop_stream()
         cap.close()
-        cv2.destroyAllWindows()
         print(f"\n¡Grabación finalizada correctamente! VÍDEO: {ruta_video}")
 
 if __name__ == '__main__':

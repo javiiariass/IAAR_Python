@@ -3,6 +3,9 @@ import numpy as np
 import time
 import os
 import random
+import threading
+import struct
+from server import TankServer
 
 from camera import Camera
 from motor import tankMotor
@@ -143,7 +146,15 @@ def procesar_captura_yolo(frame_capturado, ultima_foto_time, cooldown_fotos):
     return ultima_foto_time
 
 def main():
-    print("Script (con GUI) Autónomo: Conducción + YOLO automático...")
+    print("\n\n====== MODO AUTÓNOMO YOLO (C/ SERVIDOR VÍDEO) ======")
+    print("1. El robot conduce solo y captura automáticamente.")
+    print("2. Abre la app de Freenove (Client) en tu PC y conecta a la IP para ver el vídeo.")
+    print("3. Para HACER UNA FOTO DE FONDO MANUAL, pulsa Enter aquí.")
+    print("4. Escribe 'q' y Enter para salir.\n")
+
+    tcp_server = TankServer()
+    tcp_server.startTcpServer()
+
     cap = Camera(stream_size=(320, 240), hflip=True, vflip=True)
     sonar = Ultrasonic()
     cap.start_stream()
@@ -151,24 +162,35 @@ def main():
     levantar_gancho()
     time.sleep(1)
 
-    ultima_foto_time = 0
-    cooldown_fotos = 2.5 # Aumentado el cooldown a 2.5 segs. para tener variedad entre fotos
+    # Estado global para el hilo
+    estado = {"corriendo": True, "captura_manual": False}
 
-    try:
-        while True:
+    def hilo_conduccion():
+        ultima_foto_time = 0
+        cooldown_fotos = 2.5
+        
+        while estado["corriendo"]:
             frame_bytes = cap.get_frame()
-            if frame_bytes is None: continue
-            
+            if frame_bytes is None: 
+                time.sleep(0.01)
+                continue
+                
+            # --- TCP SERVER VIDEO STREAMING ---
+            if tcp_server.isVideoServerConnected():
+                lenFrame = len(frame_bytes)
+                lengthBin = struct.pack('<I', lenFrame)
+                try:
+                    tcp_server.sendDataToVideoClient(lengthBin)
+                    tcp_server.sendDataToVideoClient(frame_bytes)
+                except Exception:
+                    pass
+
             np_arr = np.frombuffer(frame_bytes, np.uint8)
             frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
             
-            cv2.imshow("Camara - Modo Autonomo YOLO ('q' para salir, 'c' foto manual)", frame)
-            key = cv2.waitKey(1) & 0xFF
-            
-            if key == ord('q'):
-                break
-            elif key == ord('c'):
-                # Captura manual: forzamos guardar SIEMPRE (incluso sin objetos para imágenes de fondo)
+            # 1. EVALUAR CAPTURA MANUAL (pulsación SSH)
+            if estado["captura_manual"]:
+                estado["captura_manual"] = False
                 detecciones_manuales = []
                 bola_detectada, _, bboxes_bola = detectar_bola_roja_yolo(frame)
                 if bola_detectada:
@@ -181,16 +203,15 @@ def main():
                 guardar_imagen_yolo(frame, detecciones_manuales, prefix="movimiento_manual")
                 print(f"\n[MANUAL] Captura de fondo/manual guardada con {len(detecciones_manuales)} detecciones.    ")
                 ultima_foto_time = time.time()
-            
-            # 1. EVALUAR YOLO Y GUARDAR AUTOMÁTICAMENTE
+                
+            # 2. EVALUAR YOLO Y GUARDAR AUTOMÁTICAMENTE
             ultima_foto_time = procesar_captura_yolo(frame, ultima_foto_time, cooldown_fotos)
             
-            # 2. EVALUAR PELIGRO PARA CONDUCIR (solo ROI y sonar)
+            # 3. COMPORTAMIENTO REACTIVO
             distancia = sonar.get_distance()
             if distancia < 0: distancia = 999.0
             limite_detectado, cantidad_pixeles = evaluar_linea_reactiva(frame)
 
-            # Imprimir constantemente los píxeles (usa \r para no saturar la pantalla)
             estado_sonar_str = f"| Distancia: {distancia:5.1f}cm" if distancia != 999.0 else "| Distancia: Error"
             print(f"Px verdes: {cantidad_pixeles} (Umbral actual: 3000) {estado_sonar_str}      ", end="\r")
 
@@ -207,7 +228,6 @@ def main():
                 time.sleep(0.2)
                 
             elif 20 < distancia <= 40:
-                print(f"\nObstáculo a media distancia ({distancia:5.1f} cm). Giro ligero...    ")
                 girar_aleatorio(tiempo_min=0.2, tiempo_max=0.4, retroceder=False, velocidad_giro=1500)
                 detener()
                 time.sleep(0.1)
@@ -215,15 +235,31 @@ def main():
             else:
                 avanzar()
 
+    # Iniciar hilo de conducción y cámara
+    t = threading.Thread(target=hilo_conduccion)
+    t.start()
+
+    try:
+        while True:
+            val = input("")
+            if val.lower() == 'q':
+                estado["corriendo"] = False
+                break
+            else:
+                estado["captura_manual"] = True
+    except KeyboardInterrupt:
+        estado["corriendo"] = False
     finally:
+        estado["corriendo"] = False
+        tcp_server.stopTcpServer()
+        t.join(timeout=1.0)
         detener()
         motor.close()
         servo_obj.setServoStop()
         sonar.close()
         cap.stop_stream()
         cap.close()
-        cv2.destroyAllWindows()
-        print("Robot detenido de forma segura.")
+        print("\nRobot detenido de forma segura.")
 
 if __name__ == '__main__':
     main()
