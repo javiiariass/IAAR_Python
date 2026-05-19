@@ -61,13 +61,29 @@ def evaluar_linea_reactiva(frame):
         return True, pixeles_verdes
     return False, pixeles_verdes
 
+import sys
+import tty
+import termios
+
+def leer_tecla():
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(sys.stdin.fileno())
+        ch = sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    if ch == '\x03': # Captura Ctrl+C
+        raise KeyboardInterrupt
+    return ch
+
 def main():
     print("==================================================")
     print(" GRABACIÓN DE VÍDEO CON NAVEGACIÓN AUTÓNOMA ")
     print("==================================================")
     print("1. El robot conduce solo y GRABA TODO EN VÍDEO AVI.")
     print("2. Abre la app de Freenove (Client) en tu PC y conecta a la IP para ver el vídeo.")
-    print("3. Escribe 'q' y pulsa Enter para salir y GUARDAR EL VÍDEO correctamente.\n")
+    print("3. Escribe 'q' (sin Enter) para salir y GUARDAR EL VÍDEO correctamente.\n")
 
     tcp_server = TankServer()
     tcp_server.startTcpServer()
@@ -146,7 +162,7 @@ def main():
 
     try:
         while True:
-            val = input("")
+            val = leer_tecla()
             if val.lower() == 'q':
                 estado["corriendo"] = False
                 break

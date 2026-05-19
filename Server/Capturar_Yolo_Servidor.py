@@ -1,10 +1,6 @@
 import sys
-import cv2
-import numpy as np
-import time
-import os
-
-import sys
+import tty
+import termios
 import cv2
 import numpy as np
 import time
@@ -14,6 +10,18 @@ import threading
 
 from server import TankServer
 from camera import Camera
+
+def leer_tecla():
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(sys.stdin.fileno())
+        ch = sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    if ch == '\x03': # Captura Ctrl+C
+        raise KeyboardInterrupt
+    return ch
 
 # ==========================================
 # TUS FUNCIONES ORIGINALES INTACTAS
@@ -109,14 +117,14 @@ class CapturarYoloServidorSSH:
         print("\n\n====== GENERADOR DE YOLO VÍA SSH Y CLIENTE DE WINDOWS ======")
         print("1. Abre la aplicación de Windows de Freenove (Tank.exe / Client).")
         print("2. Escribe la IP de la Raspberry Pi y pulsa Connect para ver el vídeo.")
-        print("3. Para HACER UNA FOTO Y ETIQUETAR, pulsa 'd' y Enter aquí en el terminal SSH.")
-        print("4. Escribe 'q' y pulsa Enter para salir del programa.")
+        print("3. Para HACER UNA FOTO Y ETIQUETAR, pulsa 'd' (sin Enter) aquí en el terminal SSH.")
+        print("4. Escribe 'q' (sin Enter) para salir del programa.")
         print("============================================================\n")
         
         try:
             while True:
-                # Se queda esperando cualquier cosa escrita por SSH (o un simple Enter)
-                val = input("")
+                # Se queda esperando una pulsación
+                val = leer_tecla()
                 if val.lower() == 'q':
                     break
                 elif val.lower() == 'd':

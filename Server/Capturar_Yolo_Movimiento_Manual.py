@@ -98,14 +98,30 @@ def retroceder(velocidad=1200):
     # Invertido respecto a avanzar
     motor.setMotorModel(velocidad, velocidad*factor_correccion)
 
+import sys
+import tty
+import termios
+
+def leer_tecla():
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(sys.stdin.fileno())
+        ch = sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    if ch == '\x03': # Captura Ctrl+C
+        raise KeyboardInterrupt
+    return ch
+
 def main():
     print("========================================")
     print(" CONDUCCIÓN MANUAL + TECLA CAPTURA YOLO ")
     print("========================================")
     print("1. Abre la app de Freenove (Client) en tu PC y conecta a la IP para ver el vídeo.")
-    print("2. MANTEN 'w'/Enter para AVANZAR (Por consola)")
-    print("3. PULSA 'd'/Enter para TOMAR FOTO")
-    print("4. PULSA 'q'/Enter para SALIR")
+    print("2. MANTEN 'w' para AVANZAR (Por consola, sin enter)")
+    print("3. PULSA 'd' para TOMAR FOTO")
+    print("4. PULSA 'q' para SALIR")
     print("========================================")
     
     tcp_server = TankServer()
@@ -117,8 +133,11 @@ def main():
     levantar_gancho()
     
     estado = {"corriendo": True, "comando": ""}
+    is_moving = False
+    last_move_time = 0
     
     def hilo_camara():
+        nonlocal is_moving, last_move_time
         while estado["corriendo"]:
             frame_bytes = cap.get_frame()
             if frame_bytes is None: 
@@ -158,19 +177,25 @@ def main():
             # 2. EVALUAR CONDUCCIÓN
             elif comando == "w":
                 avanzar()
-                time.sleep(0.3)
-                detener()
+                last_move_time = time.time()
+                is_moving = True
             elif comando == "s":
                 retroceder()
-                time.sleep(0.3)
+                last_move_time = time.time()
+                is_moving = True
+                
+            # 3. DETENER SI SUELTA LA TECLA 
+            # (El auto-repeat de SSH enviará continuamente 'w' o 's' mientras la mantengas pulsada)
+            if is_moving and (time.time() - last_move_time > 0.25):
                 detener()
+                is_moving = False
                 
     t = threading.Thread(target=hilo_camara)
     t.start()
 
     try:
         while True:
-            val = input("")
+            val = leer_tecla()
             if val.lower() == 'q':
                 estado["corriendo"] = False
                 break

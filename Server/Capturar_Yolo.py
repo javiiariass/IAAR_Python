@@ -145,12 +145,28 @@ def procesar_captura_yolo(frame_capturado, ultima_foto_time, cooldown_fotos):
         return tiempo_actual
     return ultima_foto_time
 
+import sys
+import tty
+import termios
+
+def leer_tecla():
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(sys.stdin.fileno())
+        ch = sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    if ch == '\x03': # Captura Ctrl+C
+        raise KeyboardInterrupt
+    return ch
+
 def main():
     print("\n\n====== MODO AUTÓNOMO YOLO (C/ SERVIDOR VÍDEO) ======")
     print("1. El robot conduce solo y captura automáticamente.")
     print("2. Abre la app de Freenove (Client) en tu PC y conecta a la IP para ver el vídeo.")
-    print("3. Para HACER UNA FOTO DE FONDO MANUAL, pulsa 'd' y Enter aquí.")
-    print("4. Escribe 'q' y Enter para salir.\n")
+    print("3. Para HACER UNA FOTO DE FONDO MANUAL, pulsa 'd' (sin Enter).")
+    print("4. Escribe 'q' (sin Enter) para salir.\n")
 
     tcp_server = TankServer()
     tcp_server.startTcpServer()
@@ -241,7 +257,7 @@ def main():
 
     try:
         while True:
-            val = input("")
+            val = leer_tecla()
             if val.lower() == 'q':
                 estado["corriendo"] = False
                 break
