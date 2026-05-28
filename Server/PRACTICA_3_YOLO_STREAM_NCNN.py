@@ -47,13 +47,13 @@ VEL_GIRO = 1200          # Velocidad de giro sobre sí mismo
 FACTOR_CORRECCION = 1.2
 
 # Sonar
-DIST_RECOGER = 6.0       # Distancia (cm) a la que la bola está al alcance de la pinza
+DIST_RECOGER = 10.0       # Distancia (cm) a la que la bola está al alcance de la pinza
 DIST_FRENAR = 15.0       # Distancia (cm) a la que empezar a reducir velocidad
 DIST_OBSTACULO = 20.0    # Distancia (cm) para parada de emergencia por obstáculo
 DIST_OBSTACULO_LEJOS = 35.0  # Distancia (cm) para empezar a esquivar suavemente
 
 # Bola (detección YOLO)
-AREA_RECOGER = 0.09      # Área relativa de la bola para considerar "suficientemente cerca"
+AREA_RECOGER = 0.06      # Área relativa de la bola para considerar "suficientemente cerca"
 
 # Tiempos
 TIMEOUT_BUSQUEDA = 10     # Segundos sin ver bola antes de girar para explorar
@@ -87,12 +87,12 @@ def girar_derecha(motor, velocidad=VEL_GIRO):
 
 def girar_suave_izquierda(motor, velocidad=VEL_ACERCAR):
     """Avanzar girando suavemente a la izquierda (rueda izq más lenta)."""
-    motor.setMotorModel(-int(velocidad * 0.3), -int(velocidad * FACTOR_CORRECCION))
+    motor.setMotorModel(-int(velocidad * 0.5), -int(velocidad * FACTOR_CORRECCION))
 
 
 def girar_suave_derecha(motor, velocidad=VEL_ACERCAR):
     """Avanzar girando suavemente a la derecha (rueda der más lenta)."""
-    motor.setMotorModel(-velocidad, -int(velocidad * 0.3 * FACTOR_CORRECCION))
+    motor.setMotorModel(-velocidad, -int(velocidad * 0.5 * FACTOR_CORRECCION))
 
 
 def detener(motor):

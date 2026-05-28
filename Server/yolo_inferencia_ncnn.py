@@ -35,8 +35,8 @@ except ImportError:
 
 class YOLODetectorNCNN:
     def __init__(self, model_dir="best_ncnn_model", conf_threshold=0.45,
-                 conf_bola=None, conf_linea=None,
-                 iou_threshold=0.45, img_size=320):
+                 conf_bola=0.45, conf_linea=0.25,
+                 iou_threshold=0.35, img_size=320):
         """
         Args:
             model_dir: Carpeta con best.ncnn.param y best.ncnn.bin
