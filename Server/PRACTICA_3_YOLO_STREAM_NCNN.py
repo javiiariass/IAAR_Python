@@ -39,25 +39,25 @@ from yolo_inferencia_ncnn import YOLODetectorNCNN
 # Velocidades del motor (duty cycle, rango 0-4095)
 # Nota: valores NEGATIVOS = avanzar (motores invertidos)
 VEL_EXPLORAR = 850       # Velocidad al buscar bola (no muy alta para que la cámara no vibre)
-VEL_ACERCAR = 600        # Velocidad al dirigirse hacia una bola vista
-VEL_FRENADO = 350        # Velocidad de aproximación final (sonar < 15cm)
+VEL_ACERCAR = 700        # Velocidad al dirigirse hacia una bola vista
+VEL_FRENADO = 600        # Velocidad de aproximación final (sonar < 15cm)
 VEL_GIRO = 1200          # Velocidad de giro sobre sí mismo
 
 # Factor de corrección del motor derecho (el derecho gira más lento)
 FACTOR_CORRECCION = 1.2
 
 # Sonar
-DIST_RECOGER = 7.0       # Distancia (cm) a la que la bola está al alcance de la pinza
+DIST_RECOGER = 6.0       # Distancia (cm) a la que la bola está al alcance de la pinza
 DIST_FRENAR = 15.0       # Distancia (cm) a la que empezar a reducir velocidad
-DIST_OBSTACULO = 15.0    # Distancia (cm) para parada de emergencia por obstáculo
-DIST_OBSTACULO_LEJOS = 30.0  # Distancia (cm) para empezar a esquivar suavemente
+DIST_OBSTACULO = 20.0    # Distancia (cm) para parada de emergencia por obstáculo
+DIST_OBSTACULO_LEJOS = 35.0  # Distancia (cm) para empezar a esquivar suavemente
 
 # Bola (detección YOLO)
-AREA_RECOGER = 0.08      # Área relativa de la bola para considerar "suficientemente cerca"
+AREA_RECOGER = 0.09      # Área relativa de la bola para considerar "suficientemente cerca"
 
 # Tiempos
-TIMEOUT_BUSQUEDA = 6     # Segundos sin ver bola antes de girar para explorar
-PAUSA_TRAS_SOLTAR = 1.5  # Segundos de espera después de soltar bola
+TIMEOUT_BUSQUEDA = 10     # Segundos sin ver bola antes de girar para explorar
+PAUSA_TRAS_SOLTAR = 2  # Segundos de espera después de soltar bola
 
 # Servo ángulos
 PINZA_ABIERTA = 90
