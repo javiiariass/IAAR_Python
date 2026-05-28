@@ -26,19 +26,28 @@ cv2.setNumThreads(4)
 
 
 class YOLODetector:
-    def __init__(self, model_path="best.onnx", conf_threshold=0.45, iou_threshold=0.45, img_size=320):
+    def __init__(self, model_path="best.onnx", conf_threshold=0.45,
+                 conf_bola=None, conf_linea=None,
+                 iou_threshold=0.45, img_size=320):
         """
         Args:
             model_path: Ruta al archivo .onnx exportado desde YOLOv8.
-            conf_threshold: Umbral mínimo de confianza para aceptar una detección.
+            conf_threshold: Umbral general de confianza (se usa como mínimo
+                           para el prefiltrado rápido y como default si no
+                           se especifican los umbrales por clase).
+            conf_bola: Umbral de confianza específico para bola_roja.
+                       Si es None, usa conf_threshold.
+            conf_linea: Umbral de confianza específico para linea_verde.
+                        Si es None, usa conf_threshold.
             iou_threshold: Umbral de IoU para Non-Maximum Suppression (NMS).
-                           NMS descarta cajas duplicadas que se solapan mucho,
-                           quedándose solo con la de mayor confianza.
             img_size: Tamaño de imagen de entrada al modelo.
-                      Debe coincidir con el --imgsz usado en el entrenamiento.
         """
         self.net = cv2.dnn.readNetFromONNX(model_path)
         self.conf_threshold = conf_threshold
+        self.conf_por_clase = [
+            conf_bola if conf_bola is not None else conf_threshold,   # clase 0: bola_roja
+            conf_linea if conf_linea is not None else conf_threshold  # clase 1: linea_verde
+        ]
         self.iou_threshold = iou_threshold
         self.img_size = img_size
         self.classes = ["bola_roja", "linea_verde"]
@@ -90,8 +99,20 @@ class YOLODetector:
         class_ids_all = np.argmax(class_scores, axis=1)    # [8400]
         confidences_all = np.max(class_scores, axis=1)     # [8400]
 
-        # Filtrar por confianza — máscara booleana, sin bucle
-        mask = confidences_all > self.conf_threshold
+        # Prefiltro rápido con el umbral mínimo de las dos clases
+        min_conf = min(self.conf_por_clase)
+        mask = confidences_all > min_conf
+        if not np.any(mask):
+            return []
+
+        # Filtro fino: cada candidato debe superar el umbral de SU clase
+        umbrales = np.array(self.conf_por_clase)            # [2]
+        umbral_por_candidato = umbrales[class_ids_all[mask]] # [N_prefiltro]
+        mask2 = confidences_all[mask] > umbral_por_candidato
+        # Actualizar máscara original
+        idx_prefiltro = np.where(mask)[0]
+        mask[:] = False
+        mask[idx_prefiltro[mask2]] = True
         if not np.any(mask):
             return []
 

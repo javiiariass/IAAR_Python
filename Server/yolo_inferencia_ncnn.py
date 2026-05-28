@@ -35,14 +35,17 @@ except ImportError:
 
 class YOLODetectorNCNN:
     def __init__(self, model_dir="best_ncnn_model", conf_threshold=0.45,
+                 conf_bola=None, conf_linea=None,
                  iou_threshold=0.45, img_size=320):
         """
         Args:
             model_dir: Carpeta con best.ncnn.param y best.ncnn.bin
-            conf_threshold: Umbral mínimo de confianza para aceptar una detección.
+            conf_threshold: Umbral general de confianza (default si no se
+                           especifican umbrales por clase).
+            conf_bola: Umbral específico para bola_roja. Si None, usa conf_threshold.
+            conf_linea: Umbral específico para linea_verde. Si None, usa conf_threshold.
             iou_threshold: Umbral de IoU para Non-Maximum Suppression (NMS).
-            img_size: Tamaño de imagen de entrada al modelo (debe coincidir
-                      con el --imgsz usado en el entrenamiento).
+            img_size: Tamaño de imagen de entrada al modelo.
         """
         if not NCNN_DISPONIBLE:
             raise ImportError(
@@ -62,6 +65,10 @@ class YOLODetectorNCNN:
         self.net.load_model(bin_path)
 
         self.conf_threshold = conf_threshold
+        self.conf_por_clase = [
+            conf_bola if conf_bola is not None else conf_threshold,
+            conf_linea if conf_linea is not None else conf_threshold
+        ]
         self.iou_threshold = iou_threshold
         self.img_size = img_size
         self.classes = ["bola_roja", "linea_verde"]
@@ -125,8 +132,19 @@ class YOLODetectorNCNN:
         class_ids_all = np.argmax(class_scores, axis=1)    # [8400]
         confidences_all = np.max(class_scores, axis=1)     # [8400]
 
-        # Filtrar por confianza — máscara booleana, sin bucle
-        mask = confidences_all > self.conf_threshold
+        # Prefiltro rápido con el umbral mínimo de las dos clases
+        min_conf = min(self.conf_por_clase)
+        mask = confidences_all > min_conf
+        if not np.any(mask):
+            return []
+
+        # Filtro fino: cada candidato debe superar el umbral de SU clase
+        umbrales = np.array(self.conf_por_clase)
+        umbral_por_candidato = umbrales[class_ids_all[mask]]
+        mask2 = confidences_all[mask] > umbral_por_candidato
+        idx_prefiltro = np.where(mask)[0]
+        mask[:] = False
+        mask[idx_prefiltro[mask2]] = True
         if not np.any(mask):
             return []
 
