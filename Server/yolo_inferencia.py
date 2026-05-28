@@ -21,6 +21,9 @@ Formato de salida de YOLOv8 ONNX:
 import cv2
 import numpy as np
 
+# Usar todos los cores disponibles para OpenCV DNN
+cv2.setNumThreads(4)
+
 
 class YOLODetector:
     def __init__(self, model_path="best.onnx", conf_threshold=0.45, iou_threshold=0.45, img_size=320):
@@ -76,64 +79,61 @@ class YOLODetector:
         outputs = self.net.forward()
         # outputs tiene forma [1, 6, 8400]
 
-        # --- PASO 4: Interpretar la salida ---
+        # --- PASO 4: Interpretar la salida (VECTORIZADO) ---
         # Sacamos el batch (índice 0) y transponemos:
         #   de [6, 8400] → a [8400, 6]
         # Ahora cada fila es: [cx, cy, w, h, score_bola, score_linea]
-        outputs = outputs[0].T  # T = transpose
+        data = outputs[0].T  # T = transpose — shape [8400, 6]
 
-        # Factores para convertir coordenadas del modelo (320x320) a la imagen real
+        # Extraer scores de clase (columnas 4 y 5) de golpe
+        class_scores = data[:, 4:]                         # [8400, 2]
+        class_ids_all = np.argmax(class_scores, axis=1)    # [8400]
+        confidences_all = np.max(class_scores, axis=1)     # [8400]
+
+        # Filtrar por confianza — máscara booleana, sin bucle
+        mask = confidences_all > self.conf_threshold
+        if not np.any(mask):
+            return []
+
+        # Quedarnos solo con los candidatos que pasan el filtro
+        filtered = data[mask]                    # [N, 6]  N << 8400
+        class_ids = class_ids_all[mask]          # [N]
+        confidences = confidences_all[mask]      # [N]
+
+        # Convertir de (cx, cy, w, h) → (x, y, w, h) en coordenadas originales
         x_scale = w_orig / self.img_size
         y_scale = h_orig / self.img_size
 
-        boxes = []
-        confidences = []
-        class_ids = []
+        cx = filtered[:, 0]
+        cy = filtered[:, 1]
+        bw = filtered[:, 2]
+        bh = filtered[:, 3]
 
-        for row in outputs:
-            # Las primeras 4 columnas son la posición y tamaño de la caja
-            cx, cy, bw, bh = row[0], row[1], row[2], row[3]
+        x = ((cx - bw / 2) * x_scale).astype(np.int32)
+        y = ((cy - bh / 2) * y_scale).astype(np.int32)
+        w = (bw * x_scale).astype(np.int32)
+        h = (bh * y_scale).astype(np.int32)
 
-            # Las columnas restantes son los scores de cada clase
-            class_scores = row[4:]  # [score_bola_roja, score_linea_verde]
+        # Clamp a >= 0
+        np.maximum(x, 0, out=x)
+        np.maximum(y, 0, out=y)
 
-            # La clase predicha es la de mayor score
-            class_id = np.argmax(class_scores)
-            confidence = float(class_scores[class_id])
-
-            # Descartar si la confianza es baja
-            if confidence < self.conf_threshold:
-                continue
-
-            # Convertir de (centro_x, centro_y, ancho, alto) a (esquina_x, esquina_y, ancho, alto)
-            # y escalar a las dimensiones de la imagen original
-            x = int((cx - bw / 2) * x_scale)
-            y = int((cy - bh / 2) * y_scale)
-            w = int(bw * x_scale)
-            h = int(bh * y_scale)
-
-            # Asegurarnos de que no se sale de la imagen
-            x = max(0, x)
-            y = max(0, y)
-
-            boxes.append([x, y, w, h])
-            confidences.append(confidence)
-            class_ids.append(int(class_id))
+        # Preparar listas para NMS (necesita list de list y list de float)
+        boxes = np.stack([x, y, w, h], axis=1).tolist()
+        confs_list = confidences.tolist()
+        ids_list = class_ids.astype(int).tolist()
 
         # --- PASO 5: Non-Maximum Suppression (NMS) ---
-        # Si el modelo detecta la misma bola 3 veces con cajas muy parecidas,
-        # NMS se queda solo con la mejor y descarta las duplicadas.
         results = []
-        if boxes:
-            indices = cv2.dnn.NMSBoxes(boxes, confidences, self.conf_threshold, self.iou_threshold)
-            if len(indices) > 0:
-                for i in indices.flatten():
-                    results.append((
-                        class_ids[i],
-                        self.classes[class_ids[i]],
-                        confidences[i],
-                        boxes[i][0], boxes[i][1], boxes[i][2], boxes[i][3]
-                    ))
+        indices = cv2.dnn.NMSBoxes(boxes, confs_list, self.conf_threshold, self.iou_threshold)
+        if len(indices) > 0:
+            for i in indices.flatten():
+                results.append((
+                    ids_list[i],
+                    self.classes[ids_list[i]],
+                    confs_list[i],
+                    boxes[i][0], boxes[i][1], boxes[i][2], boxes[i][3]
+                ))
         return results
 
     def get_ball_info(self, detections, frame_width):

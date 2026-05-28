@@ -117,49 +117,59 @@ class YOLODetectorNCNN:
             output = output[0]  # Quitar batch si lo hubiera
         outputs = output.T
 
-        # --- PASO 4: Interpretar la salida ---
+        # --- PASO 4: Interpretar la salida (VECTORIZADO) ---
+        data = outputs  # shape [8400, 6]
+
+        # Extraer scores de clase (columnas 4 y 5) de golpe
+        class_scores = data[:, 4:]                         # [8400, 2]
+        class_ids_all = np.argmax(class_scores, axis=1)    # [8400]
+        confidences_all = np.max(class_scores, axis=1)     # [8400]
+
+        # Filtrar por confianza — máscara booleana, sin bucle
+        mask = confidences_all > self.conf_threshold
+        if not np.any(mask):
+            return []
+
+        # Quedarnos solo con los candidatos que pasan el filtro
+        filtered = data[mask]                    # [N, 6]  N << 8400
+        class_ids = class_ids_all[mask]          # [N]
+        confidences = confidences_all[mask]      # [N]
+
+        # Convertir de (cx, cy, w, h) → (x, y, w, h) en coordenadas originales
         x_scale = w_orig / self.img_size
         y_scale = h_orig / self.img_size
 
-        boxes = []
-        confidences = []
-        class_ids = []
+        cx = filtered[:, 0]
+        cy = filtered[:, 1]
+        bw = filtered[:, 2]
+        bh = filtered[:, 3]
 
-        for row in outputs:
-            cx, cy, bw, bh = row[0], row[1], row[2], row[3]
-            class_scores = row[4:]
+        x = ((cx - bw / 2) * x_scale).astype(np.int32)
+        y = ((cy - bh / 2) * y_scale).astype(np.int32)
+        w = (bw * x_scale).astype(np.int32)
+        h = (bh * y_scale).astype(np.int32)
 
-            class_id = np.argmax(class_scores)
-            confidence = float(class_scores[class_id])
+        # Clamp a >= 0
+        np.maximum(x, 0, out=x)
+        np.maximum(y, 0, out=y)
 
-            if confidence < self.conf_threshold:
-                continue
-
-            x = int((cx - bw / 2) * x_scale)
-            y = int((cy - bh / 2) * y_scale)
-            w = int(bw * x_scale)
-            h = int(bh * y_scale)
-
-            x = max(0, x)
-            y = max(0, y)
-
-            boxes.append([x, y, w, h])
-            confidences.append(confidence)
-            class_ids.append(int(class_id))
+        # Preparar listas para NMS
+        boxes = np.stack([x, y, w, h], axis=1).tolist()
+        confs_list = confidences.tolist()
+        ids_list = class_ids.astype(int).tolist()
 
         # --- PASO 5: Non-Maximum Suppression (NMS) ---
         results = []
-        if boxes:
-            indices = cv2.dnn.NMSBoxes(boxes, confidences,
-                                       self.conf_threshold, self.iou_threshold)
-            if len(indices) > 0:
-                for i in indices.flatten():
-                    results.append((
-                        class_ids[i],
-                        self.classes[class_ids[i]],
-                        confidences[i],
-                        boxes[i][0], boxes[i][1], boxes[i][2], boxes[i][3]
-                    ))
+        indices = cv2.dnn.NMSBoxes(boxes, confs_list,
+                                   self.conf_threshold, self.iou_threshold)
+        if len(indices) > 0:
+            for i in indices.flatten():
+                results.append((
+                    ids_list[i],
+                    self.classes[ids_list[i]],
+                    confs_list[i],
+                    boxes[i][0], boxes[i][1], boxes[i][2], boxes[i][3]
+                ))
         return results
 
     def get_ball_info(self, detections, frame_width):
@@ -200,7 +210,7 @@ class YOLODetectorNCNN:
                 "esquina": False, "num_peligrosas": 0
             }
 
-        umbral_y = frame_height * 2 / 3
+        umbral_y = frame_height * 1 / 2
         peligrosas = []
         for _, _, conf, x, y, w, h in lines:
             centro_y = y + h / 2
