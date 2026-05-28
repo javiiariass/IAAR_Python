@@ -1,18 +1,2 @@
-dog
-person
-cat
-tv
-car
-meatballs
-marinara sauce
-tomato soup
-chicken noodle soup
-french onion soup
-chicken breast
-ribs
-pulled pork
-hamburger
-cavity
 bola_roja
-0=bola_roja
-1=linea_verde
+linea_verde
