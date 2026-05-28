@@ -202,9 +202,8 @@ class YOLODetector:
                 "esquina": False, "num_peligrosas": 0
             }
 
-        # Filtrar las líneas en la mitad inferior (zona de peligro)
-        # Antes era 2/3 (tercio inferior) pero era demasiado tarde
-        umbral_y = frame_height * 1 / 2
+        # Filtrar las líneas en el tercio inferior (zona de peligro)
+        umbral_y = frame_height * 2 / 3
         peligrosas = []
         for _, _, conf, x, y, w, h in lines:
             centro_y = y + h / 2

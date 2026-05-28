@@ -318,17 +318,26 @@ def main():
 
             # ==========================================================
             # PRIORIDAD 1: EVASIÓN DE LÍNEA VERDE
-            # Solo si la línea está en el tercio inferior (peligro real)
+            # Si hay bola a la vista, solo evadir si la línea está
+            # MUY cerca (último cuarto del frame, posicion_y > 0.85).
+            # Si NO hay bola, evadir con el umbral normal (tercio inferior).
+            # Así el robot puede acercarse a bolas cerca de la línea.
             # ==========================================================
             if line_info["peligro"]:
-                if estado != "EVADIR":
-                    esquina_txt = " (ESQUINA)" if line_info["esquina"] else ""
-                    print(f"\n⚠ EVADIR: línea en x={line_info['posicion_x']:.2f}{esquina_txt}")
-                estado = "EVADIR"
-                evadir_linea(motor, line_info)
-                estado = "BUSCAR"
-                tiempo_sin_bola = time.time()
-                continue
+                # ¿Evadir o no? Depende de si hay bola visible
+                linea_inminente = line_info["posicion_y"] > 0.85
+                evadir_ahora = linea_inminente or not bola_encontrada
+
+                if evadir_ahora:
+                    if estado != "EVADIR":
+                        esquina_txt = " (ESQUINA)" if line_info["esquina"] else ""
+                        print(f"\n⚠ EVADIR: línea en x={line_info['posicion_x']:.2f} "
+                              f"y={line_info['posicion_y']:.2f}{esquina_txt}")
+                    estado = "EVADIR"
+                    evadir_linea(motor, line_info)
+                    estado = "BUSCAR"
+                    tiempo_sin_bola = time.time()
+                    continue
 
             # ==========================================================
             # PRIORIDAD 1b: OBSTÁCULO DETECTADO POR SONAR (caja)

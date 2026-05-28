@@ -210,7 +210,7 @@ class YOLODetectorNCNN:
                 "esquina": False, "num_peligrosas": 0
             }
 
-        umbral_y = frame_height * 1 / 2
+        umbral_y = frame_height * 2 / 3
         peligrosas = []
         for _, _, conf, x, y, w, h in lines:
             centro_y = y + h / 2
