@@ -325,8 +325,15 @@ def main():
             # ==========================================================
             if line_info["peligro"]:
                 # ¿Evadir o no? Depende de si hay bola visible
-                linea_inminente = line_info["posicion_y"] > 0.85
-                evadir_ahora = linea_inminente or not bola_encontrada
+                # Si hay bola Y está cerca (área grande), NO evadir línea
+                # para poder recoger bolas en las esquinas.
+                # Solo evadir si la línea está MUY abajo (inminente caída).
+                linea_inminente = line_info["posicion_y"] > 0.80
+                bola_cerca = bola_encontrada and bola_area > AREA_RECOGER * 0.5
+                if bola_cerca:
+                    evadir_ahora = linea_inminente  # Solo si es caída inminente
+                else:
+                    evadir_ahora = not bola_encontrada or linea_inminente
 
                 if evadir_ahora:
                     if estado != "EVADIR":
@@ -391,13 +398,30 @@ def main():
 
             # ==========================================================
             # PRIORIDAD 2: BOLA DETECTADA
+            # Sonar y cámara se COMPLEMENTAN:
+            #   - Cámara confirma QUÉ hay delante (bola, no obstáculo)
+            #   - Sonar confirma A QUÉ DISTANCIA está
+            #   - Ambos regulan la velocidad de aproximación
+            #   - Ambos deben coincidir para recoger (salvo bola enorme)
             # ==========================================================
             if bola_encontrada:
                 tiempo_sin_bola = time.time()
                 tiempo_ultima_bola = time.time()
 
-                # --- ¿Suficientemente cerca para recoger? ---
-                if distancia <= DIST_RECOGER or bola_area > AREA_RECOGER:
+                sonar_cerca = 0 < distancia <= DIST_RECOGER
+                bola_grande = bola_area > AREA_RECOGER
+
+                # --- ¿Demasiado cerca? La pinza no llega si está pegada ---
+                bola_enorme = bola_area > AREA_RECOGER * 3
+                if bola_enorme or (sonar_cerca and distancia < DIST_RECOGER * 0.5):
+                    estado = "RETROCEDER"
+                    print(f"\r← MUY CERCA: area={bola_area:.3f} dist={distancia:.1f}cm → retrocediendo", end="")
+                    retroceder(motor, 0.2)
+                    continue
+
+                # --- ¿Recoger? Ambos sensores deben confirmar,
+                #     o la bola es TAN grande que es obvia ---
+                if (sonar_cerca and bola_grande) or bola_area > AREA_RECOGER * 2.5:
                     estado = "RECOGER"
                     print(f"\n✓ RECOGER: dist={distancia:.1f}cm area={bola_area:.3f}")
 
@@ -408,17 +432,12 @@ def main():
                     bolas_recogidas += 1
                     print(f"  Bola #{bolas_recogidas} recogida. Soltando...")
 
-                    # Soltar la bola donde está
                     soltar_bola(servo)
-
-                    # Levantar brazo para despejar la cámara
                     levantar_gancho(servo)
 
-                    # Esperar a que alguien retire la bola
                     print(f"  Esperando {PAUSA_TRAS_SOLTAR}s...")
                     time.sleep(PAUSA_TRAS_SOLTAR)
 
-                    # Retroceder un poco para no re-detectar
                     retroceder(motor, 0.3)
 
                     estado = "BUSCAR"
@@ -429,25 +448,23 @@ def main():
                 estado = "ACERCAR"
                 error = bola_cx - 0.5  # Negativo=izquierda, positivo=derecha
 
-                # Decidir velocidad según distancia sonar
-                if 0 < distancia < DIST_FRENAR:
+                # Velocidad: combinar señales de sonar y cámara
+                # Frenar si CUALQUIERA indica cercanía
+                if (0 < distancia < DIST_FRENAR) or bola_grande:
                     vel = VEL_FRENADO
                 else:
                     vel = VEL_ACERCAR
 
                 # Dirigirse: centrar la bola en el frame
                 if abs(error) < 0.10:
-                    # Bola centrada → avanzar recto
                     avanzar(motor, vel)
                 elif error > 0:
-                    # Bola a la derecha → girar suave a la derecha
                     girar_suave_derecha(motor, vel)
                 else:
-                    # Bola a la izquierda → girar suave a la izquierda
                     girar_suave_izquierda(motor, vel)
 
                 print(f"\r→ ACERCAR: cx={bola_cx:.2f} err={error:+.2f} "
-                      f"dist={distancia:.0f}cm vel={vel}    ", end="")
+                      f"area={bola_area:.3f} dist={distancia:.0f}cm vel={vel}    ", end="")
                 continue
 
             # ==========================================================
