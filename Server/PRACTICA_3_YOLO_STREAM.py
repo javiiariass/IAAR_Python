@@ -33,8 +33,8 @@ from yolo_inferencia import YOLODetector
 
 # Velocidades del motor (duty cycle, rango 0-4095)
 # Nota: valores NEGATIVOS = avanzar (motores invertidos)
-VEL_EXPLORAR = 850       # Velocidad al buscar bola (no muy alta para que la cámara no vibre)
-VEL_ACERCAR = 600        # Velocidad al dirigirse hacia una bola vista
+VEL_EXPLORAR = 900       # Velocidad al buscar bola (no muy alta para que la cámara no vibre)
+VEL_ACERCAR = 800        # Velocidad al dirigirse hacia una bola vista
 VEL_FRENADO = 350        # Velocidad de aproximación final (sonar < 15cm)
 VEL_GIRO = 1200          # Velocidad de giro sobre sí mismo
 
@@ -48,7 +48,7 @@ DIST_OBSTACULO = 15.0    # Distancia (cm) para parada de emergencia por obstácu
 DIST_OBSTACULO_LEJOS = 30.0  # Distancia (cm) para empezar a esquivar suavemente
 
 # Bola (detección YOLO)
-AREA_RECOGER = 0.08      # Área relativa de la bola para considerar "suficientemente cerca"
+AREA_RECOGER = 0.05      # Área relativa de la bola para considerar "suficientemente cerca"
 
 # Tiempos
 TIMEOUT_BUSQUEDA = 6     # Segundos sin ver bola antes de girar para explorar

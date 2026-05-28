@@ -12,8 +12,8 @@ Requisitos en la RPi:
   pip install ncnn --break-system-packages
 
 Archivos del modelo (generados al exportar desde Colab):
-  best_ncnn_model/best.ncnn.param   (arquitectura de la red)
-  best_ncnn_model/best.ncnn.bin     (pesos)
+  best_ncnn_model/model.ncnn.param   (arquitectura de la red)
+  best_ncnn_model/model.ncnn.bin     (pesos)
 
 Clases:
   0 = bola_roja
@@ -50,8 +50,8 @@ class YOLODetectorNCNN:
                 "Instálala con: pip install ncnn --break-system-packages"
             )
 
-        param_path = f"{model_dir}/best.ncnn.param"
-        bin_path = f"{model_dir}/best.ncnn.bin"
+        param_path = f"{model_dir}/model.ncnn.param"
+        bin_path = f"{model_dir}/model.ncnn.bin"
 
         self.net = ncnn.Net()
         # Usar todos los cores disponibles en la RPi
