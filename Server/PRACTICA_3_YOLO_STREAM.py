@@ -82,12 +82,12 @@ def girar_derecha(motor, velocidad=VEL_GIRO):
 
 def girar_suave_izquierda(motor, velocidad=VEL_ACERCAR):
     """Avanzar girando suavemente a la izquierda (rueda izq más lenta)."""
-    motor.setMotorModel(-int(velocidad * 0.3), -int(velocidad * FACTOR_CORRECCION))
+    motor.setMotorModel(-int(velocidad * 0.55), -int(velocidad * FACTOR_CORRECCION))
 
 
 def girar_suave_derecha(motor, velocidad=VEL_ACERCAR):
     """Avanzar girando suavemente a la derecha (rueda der más lenta)."""
-    motor.setMotorModel(-velocidad, -int(velocidad * 0.3 * FACTOR_CORRECCION))
+    motor.setMotorModel(-velocidad, -int(velocidad * 0.55 * FACTOR_CORRECCION))
 
 
 def detener(motor):
@@ -278,7 +278,8 @@ def main():
     # --- Variables de estado ---
     estado = "BUSCAR"
     tiempo_sin_bola = time.time()
-    dir_esquiva_obstaculo = None  # "izq" o "der", se fija al detectar obstáculo
+    tiempo_ultima_bola = 0         # Timestamp de la última vez que YOLO vio bola
+    dir_esquiva_obstaculo = None   # "izq" o "der", se fija al detectar obstáculo
 
     try:
         while True:
@@ -339,7 +340,8 @@ def main():
             #  - Cerca (d < DIST_OBSTACULO):
             #    parada de emergencia, retroceder y girar fuerte
             # ==========================================================
-            if not bola_encontrada and 0 < distancia < DIST_OBSTACULO_LEJOS:
+            bola_reciente = (time.time() - tiempo_ultima_bola) < 1.0
+            if not bola_encontrada and not bola_reciente and 0 < distancia < DIST_OBSTACULO_LEJOS:
 
                 # Fijar dirección de esquiva al primer contacto
                 # y mantenerla mientras siga detectando obstáculo
@@ -383,6 +385,7 @@ def main():
             # ==========================================================
             if bola_encontrada:
                 tiempo_sin_bola = time.time()
+                tiempo_ultima_bola = time.time()
 
                 # --- ¿Suficientemente cerca para recoger? ---
                 if distancia <= DIST_RECOGER or bola_area > AREA_RECOGER:
