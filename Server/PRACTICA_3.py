@@ -66,7 +66,7 @@ from camera import Camera
 VEL_EXPLORAR = 850       # Velocidad al buscar bola (no muy alta para que la cámara no vibre)
 VEL_ACERCAR = 700        # Velocidad al dirigirse hacia una bola vista
 VEL_FRENADO = 400        # Velocidad de aproximación final (sonar < 15cm)
-VEL_GIRO = 800          # Velocidad de giro sobre sí mismo
+VEL_GIRO = 1000          # Velocidad de giro sobre sí mismo
 VEL_RETROCESO = 900      # Velocidad de marcha atrás (reflejos de seguridad y maniobras)
 
 # Factor de corrección del motor derecho (el derecho gira más lento)
@@ -81,11 +81,11 @@ DIST_OBSTACULO_LEJOS = 35.0  # Distancia (cm) para empezar a esquivar suavemente
 # Bola (detección YOLO)
 AREA_RECOGER = 0.150      # Área relativa de la bola al alcance de la pinza (CALIBRAR con --test-percepcion)
 BOLA_CENTRADA = 0.12     # |error| por debajo → centrada (avanza recto / puede recoger)
-BOLA_GIRO_PIVOTE = 0.20  # |error| por encima → pivota en el sitio para centrar rápido
-VEL_GIRO_BOLA = 1000     # Velocidad de pivote al centrar la bola (subir si la oruga débil no pivota)
+BOLA_GIRO_PIVOTE = 0.15  # |error| por encima → pivota en el sitio para centrar rápido
+VEL_GIRO_BOLA = 800     # Velocidad de pivote al centrar la bola (subir si la oruga débil no pivota)
 RATIO_APROX_FINA = 0.7   # area/AREA_RECOGER por encima → aproximación a PULSOS (poco a poco)
-PULSO_AVANCE = 0.12      # s de avance en cada pulso de la aproximación fina (bajar si se pasa)
-PULSO_PAUSA = 0.10       # s de pausa entre pulsos para que YOLO reevalúe
+PULSO_AVANCE = 0.10      # s de avance en cada pulso de la aproximación fina (bajar si se pasa)
+PULSO_PAUSA = 0.20       # s de pausa entre pulsos para que YOLO reevalúe
 
 # Línea verde (HSV, Capa 1) — del PRACTICA_2_solo_vision.py
 HSV_VERDE_BAJO = (40, 50, 50)
