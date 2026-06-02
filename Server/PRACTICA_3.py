@@ -94,6 +94,12 @@ HSV_VERDE_BAJO = (40, 50, 50)
 HSV_VERDE_ALTO = (85, 255, 255)
 HSV_UMBRAL_PIXELES = 3000    # Píxeles verdes en el ROI para considerar "peligro"
 HSV_ROI_DESDE = 2.0 / 3.0    # ROI = tercio inferior del frame
+# Con bola fijada y cerca, ignorar el frenado por verde para poder cogerla junto a
+# la línea. Umbral = ratio (area/AREA_RECOGER) por encima del cual se anula el HSV.
+#   más bajo (p.ej. 0.6) → tolera la línea desde más lejos (más agresivo)
+#   más alto (p.ej. 1.0) → solo la ignora casi pegado (más prudente)
+# La Capa 0 (IR) NUNCA se anula: sigue siendo el backstop anti-caída.
+RATIO_SUPRIMIR_LINEA = 0.8
 
 # Tiempos
 TIMEOUT_BUSQUEDA = 10    # Segundos sin ver bola antes de girar para explorar
@@ -520,7 +526,7 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
         # Así no se aleja de una bola que está junto a la línea. La Capa 0 (IR) sigue
         # siendo el backstop si llegara al borde de verdad.
         bola_en_aproximacion = (bola_encontrada and
-                                bola_area >= AREA_RECOGER * RATIO_APROX_FINA)
+                                bola_area >= AREA_RECOGER * RATIO_SUPRIMIR_LINEA)
         estado.suprimir_linea = (bola_en_aproximacion or
                                  bola_en_borde(detecciones, bola_encontrada, bola_area))
 
