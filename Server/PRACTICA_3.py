@@ -81,10 +81,11 @@ DIST_OBSTACULO_LEJOS = 35.0  # Distancia (cm) para empezar a esquivar suavemente
 # Bola (detección YOLO)
 AREA_RECOGER = 0.150      # Área relativa de la bola al alcance de la pinza (CALIBRAR con --test-percepcion)
 BOLA_CENTRADA = 0.12     # |error| por debajo → centrada (avanza recto / puede recoger)
-VEL_GIRO_BOLA = 900     # Velocidad de pivote al centrar la bola (≥VEL_GIRO o no rota; subir si calla)
+VEL_GIRO_BOLA = 1200     # Duty del "tap" de pivote: ALTO para romper la fricción y arrancar (subir si no rota)
 RATIO_APROX_FINA = 0.8   # area/AREA_RECOGER por encima → aproximación a PULSOS (poco a poco)
 PULSO_AVANCE = 0.10      # s de avance en cada pulso de la aproximación fina (bajar si se pasa)
-PULSO_GIRO = 0.10        # s de pivote en cada pulso de centrado cercano (bajar si se pasa de vuelta)
+PULSO_GIRO = 0.10        # s del tap de pivote MÍNIMO (error pequeño). Subir si no gira nada
+PULSO_GIRO_MAX = 0.30    # s del tap de pivote MÁXIMO (error grande). Bajar si se pasa "a lo loco"
 PULSO_PAUSA = 0.20       # s de pausa entre pulsos para que YOLO reevalúe
 TIMEOUT_ACERCAR = 7      # s máx en ACERCAR sin recoger → retrocede y re-busca (anti-atasco)
 
@@ -665,20 +666,20 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
             cerca = ratio > RATIO_APROX_FINA
 
             if not centrada:
-                # CENTRAR pivotando a velocidad FIABLE (VEL_GIRO_BOLA ≥ VEL_GIRO, si no
-                # no rota). Lejos: continuo (cubre errores grandes rápido). Cerca: a
-                # pulsos cortos para no pasarse de vuelta.
+                # CENTRAR con "taps" de pivote (igual cerca y lejos): duty ALTO
+                # (VEL_GIRO_BOLA) para vencer la fricción y arrancar desde parado, pero
+                # duración CORTA y PROPORCIONAL al error → poco error = tap corto/preciso,
+                # mucho error = tap más largo/rápido. Ni se queda quieto ni se pasa.
+                t_giro = min(PULSO_GIRO_MAX,
+                             PULSO_GIRO * (1.0 + (abs_err - BOLA_CENTRADA) / BOLA_CENTRADA))
                 if error > 0:
                     girar_derecha(motor, "deliberativa", VEL_GIRO_BOLA)
                 else:
                     girar_izquierda(motor, "deliberativa", VEL_GIRO_BOLA)
-                if cerca:
-                    dormir(PULSO_GIRO, estado)
-                    detener(motor, "deliberativa")
-                    dormir(PULSO_PAUSA, estado)
-                    modo = "GIRA-cerca"
-                else:
-                    modo = "GIRA-lejos"
+                dormir(t_giro, estado)
+                detener(motor, "deliberativa")
+                dormir(PULSO_PAUSA, estado)
+                modo = f"GIRA t={t_giro:.2f}"
 
             elif cerca:
                 # Centrada y cerca → avanzar a PASITOS para no subirse a la bola
