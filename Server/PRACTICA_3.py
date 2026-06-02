@@ -87,6 +87,7 @@ PULSO_AVANCE = 0.10      # s de avance en cada pulso de la aproximación fina (b
 PULSO_GIRO = 0.10        # s del tap de pivote MÍNIMO (error pequeño). Subir si no gira nada
 PULSO_GIRO_MAX = 0.30    # s del tap de pivote MÁXIMO (error grande). Bajar si se pasa "a lo loco"
 PULSO_PAUSA = 0.20       # s de pausa entre pulsos para que YOLO reevalúe
+VEL_RETROCESO_FINO = 500 # Velocidad de retroceso LENTO al reposicionar bola muy cerca (no el de seguridad)
 TIMEOUT_ACERCAR = 7      # s máx en ACERCAR sin recoger → retrocede y re-busca (anti-atasco)
 
 # Línea verde (HSV, Capa 1) — del PRACTICA_2_solo_vision.py
@@ -128,6 +129,7 @@ class Estado:
         self.running = True          # SIGINT lo pone a False → todos los bucles terminan
         self.peligro_ir = False      # Capa 0 → todas
         self.peligro_hsv = False     # Capa 1 → deliberativa
+        self.hsv_verde = 0           # Capa 1 → log: nº de píxeles verdes del último frame
         self.suprimir_linea = False  # Capa 2 → Capa 1 (bola en el borde: no frenes)
         self._frame = None           # último frame BGR publicado por el hilo HSV
         self._frame_lock = threading.Lock()
@@ -391,7 +393,7 @@ def dibujar_detecciones(frame, detecciones, estado_fsm, distancia, bolas_recogid
     cv2.putText(frame, f"{estado_fsm} | Sonar:{distancia:.0f}cm | Bolas:{bolas_recogidas}",
                 (5, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, COLOR_ESTADO, 1)
     flags = (f"IR:{int(estado.peligro_ir)} HSV:{int(estado.peligro_hsv)} "
-             f"SUP:{int(estado.suprimir_linea)} dueno:{motor.dueno()}")
+             f"verde:{estado.hsv_verde} SUP:{int(estado.suprimir_linea)} dueno:{motor.dueno()}")
     cv2.putText(frame, flags, (5, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.4, COLOR_ESTADO, 1)
     return frame
 
@@ -460,7 +462,8 @@ def hilo_hsv(estado, motor, camera):
 
         estado.set_frame(frame)
 
-        peligro, _ = contar_verde(frame)
+        peligro, n_verde = contar_verde(frame)
+        estado.hsv_verde = n_verde
         if estado.suprimir_linea:
             peligro = False  # Capa 2 pidió no frenar (bola en el borde)
         estado.peligro_hsv = peligro
@@ -544,7 +547,11 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
         if estado.peligro_ir or estado.peligro_hsv:
             if not en_seguridad:
                 causa_seguridad = "IR" if estado.peligro_ir else "HSV"
-                print(f"\n■ SEGURIDAD ({causa_seguridad}): cediendo control...")
+                if causa_seguridad == "HSV":
+                    print(f"\n■ SEGURIDAD (HSV verde={estado.hsv_verde}px "
+                          f"umbral={HSV_UMBRAL_PIXELES}): cediendo control...")
+                else:
+                    print("\n■ SEGURIDAD (IR): cediendo control...")
                 en_seguridad = True
             estado_fsm = "SEGURIDAD"
             dormir(0.02, estado)
@@ -637,11 +644,16 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
             abs_err = abs(error)
             centrada = abs_err < BOLA_CENTRADA
 
-            # --- ¿Demasiado cerca? La pinza no llega si está pegada (área enorme) ---
+            # --- ¿Demasiado cerca? Retroceder DESPACIO y a PULSOS para reposicionar
+            #     (no el retroceder() de seguridad, que da el tirón a VEL_RETROCESO=900) ---
             if bola_area > AREA_RECOGER * 1.1:
                 estado_fsm = "RETROCEDER"
-                traza(f"MUY CERCA area={bola_area:.3f} → retrocede")
-                retroceder(motor, "deliberativa", estado, 0.2)
+                traza(f"MUY CERCA area={bola_area:.3f} → retrocede despacio")
+                motor.mover("deliberativa", VEL_RETROCESO_FINO,
+                            int(VEL_RETROCESO_FINO * FACTOR_CORRECCION))
+                dormir(PULSO_AVANCE, estado)
+                detener(motor, "deliberativa")
+                dormir(PULSO_PAUSA, estado)
                 continue
 
             # --- ¿Recoger? ---
