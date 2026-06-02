@@ -75,7 +75,7 @@ FACTOR_CORRECCION = 1.2
 # Sonar
 DIST_RECOGER = 6.0      # Distancia (cm) a la que la bola está al alcance de la pinza
 DIST_FRENAR = 20.0       # Distancia (cm) a la que empezar a reducir velocidad
-DIST_OBSTACULO = 20.0    # Distancia (cm) para parada de emergencia por obstáculo
+DIST_OBSTACULO = 25.0    # Distancia (cm) para parada de emergencia por obstáculo
 DIST_OBSTACULO_LEJOS = 35.0  # Distancia (cm) para empezar a esquivar suavemente
 
 # Bola (detección YOLO)
@@ -87,7 +87,7 @@ PULSO_AVANCE = 0.10      # s de avance en cada pulso de la aproximación fina (b
 PULSO_GIRO = 0.10        # s del tap de pivote MÍNIMO (error pequeño). Subir si no gira nada
 PULSO_GIRO_MAX = 0.30    # s del tap de pivote MÁXIMO (error grande). Bajar si se pasa "a lo loco"
 PULSO_PAUSA = 0.20       # s de pausa entre pulsos para que YOLO reevalúe
-VEL_RETROCESO_FINO = 500 # Velocidad de retroceso LENTO al reposicionar bola muy cerca (no el de seguridad)
+VEL_RETROCESO_FINO = 800 # Velocidad de retroceso LENTO al reposicionar bola muy cerca (no el de seguridad)
 TIMEOUT_ACERCAR = 7      # s máx en ACERCAR sin recoger → retrocede y re-busca (anti-atasco)
 
 # Línea verde (HSV, Capa 1) — del PRACTICA_2_solo_vision.py
@@ -100,7 +100,7 @@ HSV_ROI_DESDE = 2.0 / 3.0    # ROI = tercio inferior del frame
 #   más bajo (p.ej. 0.6) → tolera la línea desde más lejos (más agresivo)
 #   más alto (p.ej. 1.0) → solo la ignora casi pegado (más prudente)
 # La Capa 0 (IR) NUNCA se anula: sigue siendo el backstop anti-caída.
-RATIO_SUPRIMIR_LINEA = 0.1
+RATIO_SUPRIMIR_LINEA = 0.5
 
 # Tiempos
 TIMEOUT_BUSQUEDA = 20    # Segundos sin ver bola antes de girar para explorar
