@@ -1,0 +1,409 @@
+Arrancando capas: IR (Capa 0) + HSV (Capa 1) + deliberativa (Capa 2)
+
+[   0.2s] ACERCAR[RECTO] cx=0.44 err=-0.06 area=0.027 ratio=0.18 dist=170cm
+[   0.3s] ACERCAR[RECTO] cx=0.44 err=-0.06 area=0.027 ratio=0.18 dist=170cm
+[   0.4s] ACERCAR[RECTO] cx=0.44 err=-0.06 area=0.027 ratio=0.18 dist=170cm
+[   0.6s] ACERCAR[RECTO] cx=0.43 err=-0.07 area=0.028 ratio=0.19 dist=170cm
+[   0.7s] ACERCAR[RECTO] cx=0.42 err=-0.08 area=0.027 ratio=0.18 dist=170cm
+[   1.2s] ACERCAR[GIRA t=0.11] cx=0.36 err=-0.14 area=0.028 ratio=0.19 dist=170cm
+[   1.7s] ACERCAR[GIRA t=0.11] cx=0.37 err=-0.13 area=0.042 ratio=0.28 dist=108cm
+[   1.8s] ACERCAR[RECTO] cx=0.46 err=-0.04 area=0.039 ratio=0.26 dist=167cm
+/usr/lib/python3/dist-packages/gpiozero/input_devices.py:975: DistanceSensorNoEcho: no echo received
+  warnings.warn(DistanceSensorNoEcho('no echo received'))
+[   2.0s] ACERCAR[RECTO] cx=0.46 err=-0.04 area=0.039 ratio=0.26 dist=167cm
+[   2.1s] ACERCAR[RECTO] cx=0.46 err=-0.04 area=0.038 ratio=0.25 dist=167cm
+[   2.3s] ACERCAR[RECTO] cx=0.43 err=-0.07 area=0.039 ratio=0.26 dist=167cm
+[   2.4s] ACERCAR[RECTO] cx=0.43 err=-0.07 area=0.039 ratio=0.26 dist=167cm
+[   2.5s] ACERCAR[RECTO] cx=0.43 err=-0.07 area=0.039 ratio=0.26 dist=154cm
+[   2.7s] ACERCAR[RECTO] cx=0.39 err=-0.11 area=0.043 ratio=0.28 dist=154cm
+[   2.8s] ACERCAR[RECTO] cx=0.39 err=-0.11 area=0.044 ratio=0.30 dist=76cm
+[   3.3s] ACERCAR[GIRA t=0.10] cx=0.38 err=-0.12 area=0.057 ratio=0.38 dist=76cm
+[   3.8s] ACERCAR[GIRA t=0.10] cx=0.38 err=-0.12 area=0.176 ratio=1.17 dist=7cm
+
+✓ RECOGER: area=0.173 cx=0.50
+  Bola #1 recogida. Soltando...
+  Esperando 2s...
+
+✓ RECOGER: area=0.162 cx=0.46
+  Bola #2 recogida. Soltando...
+  Esperando 2s...
+[  16.0s] ACERCAR[P-AVANCE] cx=0.52 err=+0.02 area=0.147 ratio=0.98 dist=5cm
+[  16.4s] ACERCAR[P-AVANCE] cx=0.53 err=+0.03 area=0.129 ratio=0.86 dist=92cm
+[  16.9s] ACERCAR[P-AVANCE] cx=0.53 err=+0.03 area=0.129 ratio=0.86 dist=142cm
+[  17.3s] ACERCAR[P-AVANCE] cx=0.53 err=+0.03 area=0.129 ratio=0.86 dist=160cm
+[  17.8s] ACERCAR[P-AVANCE] cx=0.54 err=+0.04 area=0.129 ratio=0.86 dist=160cm
+[  18.2s] ACERCAR[P-AVANCE] cx=0.53 err=+0.03 area=0.129 ratio=0.86 dist=160cm
+[  18.7s] ACERCAR[P-AVANCE] cx=0.54 err=+0.04 area=0.129 ratio=0.86 dist=160cm
+[  19.1s] ACERCAR[P-AVANCE] cx=0.54 err=+0.04 area=0.129 ratio=0.86 dist=160cm
+[  19.6s] ACERCAR[P-AVANCE] cx=0.54 err=+0.04 area=0.129 ratio=0.86 dist=160cm
+[  20.1s] ACERCAR[P-AVANCE] cx=0.53 err=+0.03 area=0.129 ratio=0.86 dist=160cm
+[  20.5s] ACERCAR[P-AVANCE] cx=0.54 err=+0.04 area=0.128 ratio=0.85 dist=160cm
+[  21.0s] ACERCAR[P-AVANCE] cx=0.53 err=+0.03 area=0.129 ratio=0.86 dist=160cm
+[  21.4s] ACERCAR[P-AVANCE] cx=0.54 err=+0.04 area=0.129 ratio=0.86 dist=106cm
+[  21.9s] ACERCAR[P-AVANCE] cx=0.53 err=+0.03 area=0.129 ratio=0.86 dist=160cm
+[  22.3s] ACERCAR[P-AVANCE] cx=0.53 err=+0.03 area=0.129 ratio=0.86 dist=160cm
+[  22.8s] ACERCAR[P-AVANCE] cx=0.54 err=+0.04 area=0.129 ratio=0.86 dist=160cm
+
+[  23.0s] ACERCAR demasiado tiempo (atascado) → retrocede y re-busca
+[  24.5s] ACERCAR[GIRA t=0.30] cx=0.94 err=+0.44 area=0.026 ratio=0.17 dist=18cm
+[  25.0s] ACERCAR[GIRA t=0.10] cx=0.62 err=+0.12 area=0.036 ratio=0.24 dist=169cm
+[  25.1s] ACERCAR[RECTO] cx=0.55 err=+0.05 area=0.036 ratio=0.24 dist=169cm
+[  25.3s] ACERCAR[RECTO] cx=0.55 err=+0.05 area=0.036 ratio=0.24 dist=169cm
+[  25.4s] ACERCAR[RECTO] cx=0.55 err=+0.05 area=0.036 ratio=0.24 dist=169cm
+[  25.6s] ACERCAR[RECTO] cx=0.55 err=+0.05 area=0.036 ratio=0.24 dist=169cm
+[  25.7s] ACERCAR[RECTO] cx=0.55 err=+0.05 area=0.036 ratio=0.24 dist=169cm
+[  25.9s] ACERCAR[RECTO] cx=0.55 err=+0.05 area=0.036 ratio=0.24 dist=169cm
+[  26.0s] ACERCAR[RECTO] cx=0.55 err=+0.05 area=0.036 ratio=0.24 dist=169cm
+[  26.2s] ACERCAR[RECTO] cx=0.55 err=+0.05 area=0.036 ratio=0.24 dist=169cm
+[  26.3s] ACERCAR[RECTO] cx=0.55 err=+0.05 area=0.036 ratio=0.24 dist=169cm
+[  26.4s] ACERCAR[RECTO] cx=0.55 err=+0.05 area=0.036 ratio=0.24 dist=169cm
+[  26.6s] ACERCAR[RECTO] cx=0.55 err=+0.05 area=0.036 ratio=0.24 dist=169cm
+[  26.7s] ACERCAR[RECTO] cx=0.55 err=+0.05 area=0.036 ratio=0.24 dist=169cm
+[  26.9s] ACERCAR[RECTO] cx=0.58 err=+0.08 area=0.038 ratio=0.25 dist=169cm
+[  27.0s] ACERCAR[RECTO] cx=0.58 err=+0.08 area=0.040 ratio=0.27 dist=169cm
+[  27.2s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.044 ratio=0.30 dist=169cm
+[  27.3s] ACERCAR[RECTO] cx=0.60 err=+0.10 area=0.056 ratio=0.38 dist=134cm
+[  27.5s] ACERCAR[RECTO] cx=0.61 err=+0.11 area=0.077 ratio=0.51 dist=134cm
+[  27.6s] ACERCAR[RECTO] cx=0.61 err=+0.11 area=0.077 ratio=0.51 dist=134cm
+[  28.1s] ACERCAR[GIRA t=0.11] cx=0.64 err=+0.14 area=0.132 ratio=0.88 dist=92cm
+
+✓ RECOGER: area=0.161 cx=0.49
+  Bola #3 recogida. Soltando...
+  Esperando 2s...
+[  34.6s] ACERCAR[GIRA t=0.30] cx=0.93 err=+0.43 area=0.029 ratio=0.19 dist=150cm
+
+✓ RECOGER: area=0.169 cx=0.42
+  Bola #4 recogida. Soltando...
+  Esperando 2s...
+
+✓ RECOGER: area=0.191 cx=0.45
+  Bola #5 recogida. Soltando...
+  Esperando 2s...
+[  47.2s] ACERCAR[GIRA t=0.30] cx=0.90 err=+0.40 area=0.065 ratio=0.43 dist=99cm
+[  47.7s] ACERCAR[GIRA t=0.20] cx=0.25 err=-0.25 area=0.137 ratio=0.91 dist=37cm
+[  48.2s] ACERCAR[GIRA t=0.12] cx=0.64 err=+0.14 area=0.130 ratio=0.87 dist=36cm
+[  48.6s] ACERCAR[P-AVANCE] cx=0.56 err=+0.06 area=0.134 ratio=0.89 dist=37cm
+[  49.3s] ACERCAR[GIRA t=0.30] cx=0.87 err=+0.37 area=0.092 ratio=0.61 dist=37cm
+[  49.9s] ACERCAR[GIRA t=0.30] cx=0.92 err=+0.42 area=0.048 ratio=0.32 dist=35cm
+[  50.6s] ACERCAR[GIRA t=0.30] cx=0.98 err=+0.48 area=0.008 ratio=0.06 dist=32cm
+[  51.2s] ACERCAR[GIRA t=0.30] cx=0.97 err=+0.47 area=0.004 ratio=0.03 dist=30cm
+[  51.4s] ACERCAR[RECTO] cx=0.57 err=+0.07 area=0.001 ratio=0.01 dist=30cm
+[  51.5s] ACERCAR[RECTO] cx=0.57 err=+0.07 area=0.001 ratio=0.01 dist=30cm
+[  52.2s] ACERCAR[GIRA t=0.30] cx=0.94 err=+0.44 area=0.035 ratio=0.24 dist=30cm
+[  52.9s] ACERCAR[GIRA t=0.30] cx=0.89 err=+0.39 area=0.038 ratio=0.25 dist=60cm
+[  53.4s] ACERCAR[GIRA t=0.17] cx=0.70 err=+0.20 area=0.025 ratio=0.17 dist=60cm
+[  53.6s] BUSCAR 1s sin bola | dist=78cm
+[  53.7s] BUSCAR 1s sin bola | dist=78cm
+[  53.8s] BUSCAR 1s sin bola | dist=69cm
+[  54.0s] BUSCAR 1s sin bola | dist=69cm
+[  54.1s] BUSCAR 1s sin bola | dist=69cm
+[  54.3s] BUSCAR 1s sin bola | dist=69cm
+[  54.4s] BUSCAR 1s sin bola | dist=69cm
+[  54.6s] BUSCAR 2s sin bola | dist=69cm
+[  54.8s] BUSCAR 2s sin bola | dist=69cm
+[  54.9s] BUSCAR 2s sin bola | dist=69cm
+[  55.0s] BUSCAR 2s sin bola | dist=69cm
+[  55.2s] BUSCAR 2s sin bola | dist=69cm
+[  55.3s] BUSCAR 2s sin bola | dist=69cm
+[  55.5s] BUSCAR 2s sin bola | dist=69cm
+[  55.6s] BUSCAR 3s sin bola | dist=69cm
+[  55.8s] BUSCAR 3s sin bola | dist=69cm
+[  55.9s] BUSCAR 3s sin bola | dist=69cm
+[  56.1s] BUSCAR 3s sin bola | dist=69cm
+[  56.2s] BUSCAR 3s sin bola | dist=69cm
+[  56.3s] BUSCAR 3s sin bola | dist=69cm
+[  56.9s] ACERCAR[GIRA t=0.26] cx=0.81 err=+0.31 area=0.043 ratio=0.29 dist=69cm
+
+■ SEGURIDAD (HSV): cediendo control...
+[  57.7s] ACERCAR[GIRA t=0.23] cx=0.78 err=+0.28 area=0.142 ratio=0.95 dist=55cm
+[  58.2s] ACERCAR[GIRA t=0.12] cx=0.64 err=+0.14 area=0.051 ratio=0.34 dist=16cm
+[  58.7s] ACERCAR[GIRA t=0.20] cx=0.74 err=+0.24 area=0.039 ratio=0.26 dist=64cm
+[  59.2s] ACERCAR[GIRA t=0.18] cx=0.72 err=+0.22 area=0.009 ratio=0.06 dist=44cm
+[  59.4s] ACERCAR[RECTO] cx=0.57 err=+0.07 area=0.008 ratio=0.05 dist=47cm
+[  59.6s] ACERCAR[RECTO] cx=0.57 err=+0.07 area=0.008 ratio=0.05 dist=47cm
+[  59.7s] ACERCAR[RECTO] cx=0.57 err=+0.07 area=0.007 ratio=0.04 dist=48cm
+[  59.8s] ACERCAR[RECTO] cx=0.57 err=+0.07 area=0.008 ratio=0.05 dist=48cm
+[  60.0s] ACERCAR[RECTO] cx=0.57 err=+0.07 area=0.008 ratio=0.05 dist=48cm
+[  60.2s] ACERCAR[RECTO] cx=0.57 err=+0.07 area=0.007 ratio=0.05 dist=48cm
+[  60.3s] ACERCAR[RECTO] cx=0.57 err=+0.07 area=0.007 ratio=0.05 dist=48cm
+[  60.5s] ACERCAR[RECTO] cx=0.57 err=+0.07 area=0.007 ratio=0.05 dist=48cm
+[  60.6s] ACERCAR[RECTO] cx=0.57 err=+0.07 area=0.008 ratio=0.05 dist=48cm
+[  60.8s] ACERCAR[RECTO] cx=0.57 err=+0.07 area=0.008 ratio=0.06 dist=57cm
+[  60.9s] ACERCAR[RECTO] cx=0.58 err=+0.08 area=0.009 ratio=0.06 dist=61cm
+[  61.1s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.012 ratio=0.08 dist=61cm
+[  61.2s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.011 ratio=0.07 dist=61cm
+[  61.4s] ACERCAR[RECTO] cx=0.60 err=+0.10 area=0.012 ratio=0.08 dist=61cm
+[  61.5s] ACERCAR[RECTO] cx=0.60 err=+0.10 area=0.013 ratio=0.09 dist=61cm
+[  61.7s] ACERCAR[RECTO] cx=0.61 err=+0.11 area=0.014 ratio=0.10 dist=62cm
+[  61.8s] ACERCAR[RECTO] cx=0.61 err=+0.11 area=0.016 ratio=0.11 dist=62cm
+[  62.0s] ACERCAR[RECTO] cx=0.62 err=+0.12 area=0.019 ratio=0.13 dist=62cm
+[  62.5s] ACERCAR[GIRA t=0.11] cx=0.63 err=+0.13 area=0.028 ratio=0.19 dist=62cm
+[  62.9s] ACERCAR[GIRA t=0.11] cx=0.63 err=+0.13 area=0.032 ratio=0.22 dist=59cm
+[  63.1s] ACERCAR[RECTO] cx=0.50 err=-0.00 area=0.020 ratio=0.13 dist=58cm
+[  63.2s] ACERCAR[RECTO] cx=0.50 err=-0.00 area=0.019 ratio=0.13 dist=59cm
+[  63.4s] ACERCAR[RECTO] cx=0.50 err=-0.00 area=0.019 ratio=0.13 dist=59cm
+[  63.5s] ACERCAR[RECTO] cx=0.50 err=-0.00 area=0.020 ratio=0.13 dist=59cm
+[  63.7s] ACERCAR[RECTO] cx=0.50 err=+0.00 area=0.019 ratio=0.13 dist=59cm
+[  63.8s] ACERCAR[RECTO] cx=0.51 err=+0.01 area=0.022 ratio=0.14 dist=59cm
+[  64.0s] ACERCAR[RECTO] cx=0.51 err=+0.01 area=0.026 ratio=0.18 dist=59cm
+
+■ SEGURIDAD (HSV): cediendo control...
+[  64.8s] ACERCAR[RECTO] cx=0.52 err=+0.02 area=0.029 ratio=0.19 dist=56cm
+[  65.0s] ACERCAR[RECTO] cx=0.52 err=+0.02 area=0.029 ratio=0.19 dist=56cm
+[  65.1s] ACERCAR[RECTO] cx=0.51 err=+0.01 area=0.023 ratio=0.15 dist=56cm
+[  65.3s] ACERCAR[RECTO] cx=0.51 err=+0.01 area=0.022 ratio=0.14 dist=56cm
+[  65.4s] ACERCAR[RECTO] cx=0.51 err=+0.01 area=0.018 ratio=0.12 dist=56cm
+[  65.6s] ACERCAR[RECTO] cx=0.51 err=+0.01 area=0.018 ratio=0.12 dist=58cm
+[  65.7s] ACERCAR[RECTO] cx=0.51 err=+0.01 area=0.018 ratio=0.12 dist=59cm
+[  65.9s] ACERCAR[RECTO] cx=0.52 err=+0.02 area=0.019 ratio=0.13 dist=59cm
+[  66.0s] ACERCAR[RECTO] cx=0.50 err=-0.00 area=0.020 ratio=0.13 dist=59cm
+[  66.2s] ACERCAR[RECTO] cx=0.50 err=+0.00 area=0.020 ratio=0.13 dist=59cm
+[  66.3s] ACERCAR[RECTO] cx=0.50 err=+0.00 area=0.023 ratio=0.15 dist=59cm
+[  66.5s] ACERCAR[RECTO] cx=0.51 err=+0.01 area=0.029 ratio=0.19 dist=59cm
+
+■ SEGURIDAD (HSV): cediendo control...
+[  67.4s] ACERCAR[RECTO] cx=0.49 err=-0.01 area=0.032 ratio=0.21 dist=57cm
+[  67.5s] ACERCAR[RECTO] cx=0.49 err=-0.01 area=0.032 ratio=0.21 dist=57cm
+[  67.7s] ACERCAR[RECTO] cx=0.49 err=-0.01 area=0.026 ratio=0.17 dist=57cm
+[  67.8s] ACERCAR[RECTO] cx=0.48 err=-0.02 area=0.021 ratio=0.14 dist=57cm
+[  68.0s] ACERCAR[RECTO] cx=0.48 err=-0.02 area=0.018 ratio=0.12 dist=57cm
+[  68.1s] ACERCAR[RECTO] cx=0.48 err=-0.02 area=0.019 ratio=0.13 dist=57cm
+[  68.3s] ACERCAR[RECTO] cx=0.48 err=-0.02 area=0.019 ratio=0.13 dist=57cm
+[  68.4s] ACERCAR[RECTO] cx=0.48 err=-0.02 area=0.018 ratio=0.12 dist=57cm
+[  68.6s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.019 ratio=0.13 dist=58cm
+[  68.7s] ACERCAR[RECTO] cx=0.46 err=-0.04 area=0.019 ratio=0.13 dist=58cm
+[  68.9s] ACERCAR[RECTO] cx=0.45 err=-0.05 area=0.019 ratio=0.13 dist=58cm
+[  69.0s] ACERCAR[RECTO] cx=0.45 err=-0.05 area=0.019 ratio=0.13 dist=58cm
+[  69.2s] ACERCAR[RECTO] cx=0.45 err=-0.05 area=0.019 ratio=0.13 dist=58cm
+[  69.3s] ACERCAR[RECTO] cx=0.45 err=-0.05 area=0.019 ratio=0.13 dist=58cm
+[  69.5s] ACERCAR[RECTO] cx=0.45 err=-0.05 area=0.019 ratio=0.13 dist=58cm
+[  69.6s] ACERCAR[RECTO] cx=0.45 err=-0.05 area=0.019 ratio=0.13 dist=58cm
+[  69.8s] ACERCAR[RECTO] cx=0.45 err=-0.05 area=0.019 ratio=0.13 dist=58cm
+[  69.9s] ACERCAR[RECTO] cx=0.45 err=-0.05 area=0.019 ratio=0.13 dist=58cm
+[  70.1s] ACERCAR[RECTO] cx=0.45 err=-0.05 area=0.019 ratio=0.13 dist=58cm
+[  70.2s] ACERCAR[RECTO] cx=0.45 err=-0.05 area=0.019 ratio=0.13 dist=58cm
+[  70.4s] ACERCAR[RECTO] cx=0.45 err=-0.05 area=0.019 ratio=0.13 dist=58cm
+[  70.5s] ACERCAR[RECTO] cx=0.45 err=-0.05 area=0.019 ratio=0.13 dist=58cm
+[  70.7s] ACERCAR[RECTO] cx=0.45 err=-0.05 area=0.018 ratio=0.12 dist=58cm
+[  70.8s] ACERCAR[RECTO] cx=0.45 err=-0.05 area=0.018 ratio=0.12 dist=58cm
+[  71.0s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.019 ratio=0.13 dist=57cm
+[  71.6s] ACERCAR[GIRA t=0.25] cx=0.80 err=+0.30 area=0.031 ratio=0.20 dist=57cm
+[  72.0s] ACERCAR[GIRA t=0.13] cx=0.66 err=+0.16 area=0.035 ratio=0.23 dist=47cm
+[  72.2s] ACERCAR[RECTO] cx=0.58 err=+0.08 area=0.034 ratio=0.23 dist=50cm
+[  72.4s] ACERCAR[RECTO] cx=0.58 err=+0.08 area=0.034 ratio=0.23 dist=50cm
+[  72.5s] ACERCAR[RECTO] cx=0.58 err=+0.08 area=0.033 ratio=0.22 dist=50cm
+[  72.7s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.034 ratio=0.23 dist=50cm
+[  72.8s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.033 ratio=0.22 dist=50cm
+[  73.0s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.034 ratio=0.23 dist=50cm
+[  73.1s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.035 ratio=0.23 dist=50cm
+[  73.3s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.034 ratio=0.23 dist=50cm
+[  73.4s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.034 ratio=0.23 dist=50cm
+[  73.6s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.034 ratio=0.23 dist=50cm
+[  73.7s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.035 ratio=0.23 dist=50cm
+[  73.9s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.034 ratio=0.23 dist=50cm
+[  74.1s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.035 ratio=0.23 dist=50cm
+[  74.2s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.033 ratio=0.22 dist=50cm
+[  74.4s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.034 ratio=0.23 dist=50cm
+
+[  74.5s] ACERCAR demasiado tiempo (atascado) → retrocede y re-busca
+[  75.6s] BUSCAR 0s sin bola | dist=49cm
+[  75.7s] BUSCAR 0s sin bola | dist=49cm
+[  75.8s] BUSCAR 0s sin bola | dist=49cm
+[  76.0s] BUSCAR 1s sin bola | dist=49cm
+[  76.1s] BUSCAR 1s sin bola | dist=49cm
+[  76.3s] BUSCAR 1s sin bola | dist=49cm
+[  76.4s] BUSCAR 1s sin bola | dist=46cm
+[  76.6s] BUSCAR 1s sin bola | dist=49cm
+
+■ SEGURIDAD (HSV): cediendo control...
+[  77.7s] BUSCAR 2s sin bola | dist=63cm
+[  77.9s] BUSCAR 2s sin bola | dist=76cm
+[  78.0s] BUSCAR 3s sin bola | dist=76cm
+[  78.2s] BUSCAR 3s sin bola | dist=59cm
+[  78.3s] BUSCAR 3s sin bola | dist=59cm
+[  78.5s] BUSCAR 3s sin bola | dist=75cm
+[  78.7s] BUSCAR 3s sin bola | dist=75cm
+[  78.8s] BUSCAR 3s sin bola | dist=66cm
+[  78.9s] BUSCAR 4s sin bola | dist=66cm
+
+■ SEGURIDAD (HSV): cediendo control...
+[  80.0s] BUSCAR 5s sin bola | dist=73cm
+[  80.1s] BUSCAR 5s sin bola | dist=75cm
+[  80.3s] BUSCAR 5s sin bola | dist=78cm
+[  80.4s] BUSCAR 5s sin bola | dist=78cm
+[  80.6s] BUSCAR 5s sin bola | dist=78cm
+[  80.7s] BUSCAR 5s sin bola | dist=78cm
+[  80.8s] BUSCAR 5s sin bola | dist=73cm
+[  81.0s] BUSCAR 6s sin bola | dist=62cm
+
+■ SEGURIDAD (HSV): cediendo control...
+[  82.5s] BUSCAR 7s sin bola | dist=98cm
+[  82.6s] BUSCAR 7s sin bola | dist=91cm
+[  82.8s] BUSCAR 7s sin bola | dist=48cm
+[  82.9s] BUSCAR 8s sin bola | dist=48cm
+[  83.1s] BUSCAR 8s sin bola | dist=48cm
+[  83.2s] BUSCAR 8s sin bola | dist=48cm
+[  83.4s] BUSCAR 8s sin bola | dist=48cm
+[  84.0s] ACERCAR[GIRA t=0.24] cx=0.79 err=+0.29 area=0.026 ratio=0.17 dist=48cm
+[  84.6s] ACERCAR[GIRA t=0.30] cx=0.12 err=-0.38 area=0.059 ratio=0.39 dist=41cm
+[  84.8s] ACERCAR[RECTO] cx=0.61 err=+0.11 area=0.047 ratio=0.31 dist=41cm
+[  84.9s] ACERCAR[RECTO] cx=0.61 err=+0.11 area=0.046 ratio=0.31 dist=41cm
+[  85.1s] ACERCAR[RECTO] cx=0.61 err=+0.11 area=0.046 ratio=0.31 dist=41cm
+[  85.2s] ACERCAR[RECTO] cx=0.61 err=+0.11 area=0.046 ratio=0.31 dist=18cm
+[  85.4s] ACERCAR[RECTO] cx=0.61 err=+0.11 area=0.046 ratio=0.31 dist=18cm
+[  85.5s] ACERCAR[RECTO] cx=0.61 err=+0.11 area=0.046 ratio=0.31 dist=18cm
+[  85.7s] ACERCAR[RECTO] cx=0.61 err=+0.11 area=0.047 ratio=0.31 dist=18cm
+[  85.8s] ACERCAR[RECTO] cx=0.62 err=+0.12 area=0.051 ratio=0.34 dist=18cm
+[  86.3s] ACERCAR[GIRA t=0.11] cx=0.63 err=+0.13 area=0.056 ratio=0.38 dist=18cm
+[  86.7s] ACERCAR[P-AVANCE] cx=0.56 err=+0.06 area=0.124 ratio=0.82 dist=12cm
+[  87.2s] ACERCAR[P-AVANCE] cx=0.56 err=+0.06 area=0.122 ratio=0.82 dist=10cm
+[  87.6s] ACERCAR[P-AVANCE] cx=0.56 err=+0.06 area=0.122 ratio=0.82 dist=10cm
+[  88.1s] ACERCAR[P-AVANCE] cx=0.56 err=+0.06 area=0.122 ratio=0.82 dist=10cm
+[  88.5s] ACERCAR[P-AVANCE] cx=0.56 err=+0.06 area=0.122 ratio=0.82 dist=10cm
+[  89.0s] ACERCAR[P-AVANCE] cx=0.56 err=+0.06 area=0.122 ratio=0.82 dist=10cm
+[  89.4s] ACERCAR[P-AVANCE] cx=0.56 err=+0.06 area=0.122 ratio=0.82 dist=10cm
+[  89.9s] ACERCAR[P-AVANCE] cx=0.56 err=+0.06 area=0.122 ratio=0.82 dist=10cm
+[  90.3s] ACERCAR[P-AVANCE] cx=0.56 err=+0.06 area=0.122 ratio=0.82 dist=10cm
+[  90.8s] ACERCAR[P-AVANCE] cx=0.56 err=+0.06 area=0.122 ratio=0.82 dist=10cm
+
+[  91.0s] ACERCAR demasiado tiempo (atascado) → retrocede y re-busca
+[  92.5s] ACERCAR[GIRA t=0.30] cx=0.87 err=+0.37 area=0.060 ratio=0.40 dist=17cm
+[  92.7s] ACERCAR[RECTO] cx=0.53 err=+0.03 area=0.042 ratio=0.28 dist=50cm
+[  92.8s] ACERCAR[RECTO] cx=0.53 err=+0.03 area=0.042 ratio=0.28 dist=48cm
+[  93.0s] ACERCAR[RECTO] cx=0.53 err=+0.03 area=0.042 ratio=0.28 dist=48cm
+[  93.1s] ACERCAR[RECTO] cx=0.53 err=+0.03 area=0.042 ratio=0.28 dist=48cm
+[  93.3s] ACERCAR[RECTO] cx=0.55 err=+0.05 area=0.045 ratio=0.30 dist=48cm
+[  93.4s] ACERCAR[RECTO] cx=0.56 err=+0.06 area=0.047 ratio=0.31 dist=47cm
+[  93.6s] ACERCAR[RECTO] cx=0.57 err=+0.07 area=0.054 ratio=0.36 dist=47cm
+[  93.8s] ACERCAR[RECTO] cx=0.57 err=+0.07 area=0.056 ratio=0.38 dist=46cm
+[  93.9s] ACERCAR[RECTO] cx=0.60 err=+0.10 area=0.087 ratio=0.58 dist=40cm
+[  94.1s] ACERCAR[RECTO] cx=0.61 err=+0.11 area=0.100 ratio=0.66 dist=40cm
+[  94.5s] ACERCAR[GIRA t=0.12] cx=0.64 err=+0.14 area=0.148 ratio=0.98 dist=37cm
+[  95.0s] ACERCAR[P-AVANCE] cx=0.45 err=-0.05 area=0.121 ratio=0.80 dist=37cm
+
+■ SEGURIDAD (HSV): cediendo control...
+[  95.6s] ACERCAR[P-AVANCE] cx=0.46 err=-0.04 area=0.134 ratio=0.89 dist=5cm
+[  95.8s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.053 ratio=0.36 dist=16cm
+[  95.9s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.052 ratio=0.35 dist=17cm
+[  96.1s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.051 ratio=0.34 dist=17cm
+[  96.2s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.052 ratio=0.35 dist=17cm
+[  96.4s] ACERCAR[RECTO] cx=0.45 err=-0.05 area=0.058 ratio=0.39 dist=17cm
+[  96.5s] ACERCAR[RECTO] cx=0.45 err=-0.05 area=0.058 ratio=0.39 dist=17cm
+
+■ SEGURIDAD (HSV): cediendo control...
+[  97.3s] ACERCAR[P-AVANCE] cx=0.38 err=-0.12 area=0.150 ratio=1.00 dist=17cm
+[  97.8s] ACERCAR[P-AVANCE] cx=0.38 err=-0.12 area=0.148 ratio=0.99 dist=7cm
+[  98.2s] ACERCAR[P-AVANCE] cx=0.38 err=-0.12 area=0.148 ratio=0.99 dist=7cm
+[  98.7s] ACERCAR[P-AVANCE] cx=0.38 err=-0.12 area=0.148 ratio=0.99 dist=7cm
+[  99.1s] ACERCAR[P-AVANCE] cx=0.38 err=-0.12 area=0.150 ratio=1.00 dist=7cm
+[  99.6s] ACERCAR[P-AVANCE] cx=0.38 err=-0.12 area=0.150 ratio=1.00 dist=7cm
+[ 100.0s] ACERCAR[P-AVANCE] cx=0.38 err=-0.12 area=0.148 ratio=0.99 dist=7cm
+[ 100.5s] ACERCAR[P-AVANCE] cx=0.38 err=-0.12 area=0.150 ratio=1.00 dist=7cm
+[ 101.0s] ACERCAR[P-AVANCE] cx=0.38 err=-0.12 area=0.148 ratio=0.99 dist=7cm
+[ 101.4s] ACERCAR[P-AVANCE] cx=0.38 err=-0.12 area=0.147 ratio=0.98 dist=7cm
+[ 101.9s] ACERCAR[P-AVANCE] cx=0.38 err=-0.12 area=0.146 ratio=0.97 dist=7cm
+[ 102.3s] ACERCAR[P-AVANCE] cx=0.38 err=-0.12 area=0.146 ratio=0.97 dist=7cm
+[ 102.8s] ACERCAR[P-AVANCE] cx=0.38 err=-0.12 area=0.146 ratio=0.97 dist=7cm
+[ 103.3s] ACERCAR[P-AVANCE] cx=0.38 err=-0.12 area=0.146 ratio=0.97 dist=7cm
+[ 103.7s] ACERCAR[P-AVANCE] cx=0.39 err=-0.11 area=0.147 ratio=0.98 dist=7cm
+[ 104.2s] ACERCAR[P-AVANCE] cx=0.39 err=-0.11 area=0.147 ratio=0.98 dist=8cm
+
+[ 104.3s] ACERCAR demasiado tiempo (atascado) → retrocede y re-busca
+[ 105.9s] ACERCAR[GIRA t=0.30] cx=0.04 err=-0.46 area=0.021 ratio=0.14 dist=16cm
+[ 106.4s] ACERCAR[GIRA t=0.11] cx=0.36 err=-0.14 area=0.044 ratio=0.30 dist=300cm
+[ 106.5s] ACERCAR[RECTO] cx=0.44 err=-0.06 area=0.044 ratio=0.30 dist=299cm
+[ 106.7s] ACERCAR[RECTO] cx=0.44 err=-0.06 area=0.044 ratio=0.29 dist=299cm
+[ 106.8s] ACERCAR[RECTO] cx=0.44 err=-0.06 area=0.044 ratio=0.30 dist=299cm
+[ 107.0s] ACERCAR[RECTO] cx=0.44 err=-0.06 area=0.044 ratio=0.30 dist=299cm
+[ 107.1s] ACERCAR[RECTO] cx=0.42 err=-0.08 area=0.045 ratio=0.30 dist=299cm
+[ 107.3s] ACERCAR[RECTO] cx=0.41 err=-0.09 area=0.054 ratio=0.36 dist=299cm
+
+■ SEGURIDAD (HSV): cediendo control...
+[ 108.1s] ACERCAR[GIRA t=0.19] cx=0.27 err=-0.23 area=0.153 ratio=1.02 dist=299cm
+
+⚠ EVADIR: línea en x=0.72 y=0.81
+[ 110.0s] ACERCAR[GIRA t=0.30] cx=0.88 err=+0.38 area=0.037 ratio=0.25 dist=72cm
+[ 110.2s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.028 ratio=0.19 dist=73cm
+[ 110.3s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.028 ratio=0.19 dist=74cm
+[ 110.5s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.028 ratio=0.19 dist=74cm
+[ 110.6s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.030 ratio=0.20 dist=74cm
+[ 110.8s] ACERCAR[RECTO] cx=0.59 err=+0.09 area=0.030 ratio=0.20 dist=74cm
+[ 110.9s] ACERCAR[RECTO] cx=0.58 err=+0.08 area=0.030 ratio=0.20 dist=73cm
+[ 111.1s] ACERCAR[RECTO] cx=0.58 err=+0.08 area=0.030 ratio=0.20 dist=73cm
+[ 111.2s] ACERCAR[RECTO] cx=0.58 err=+0.08 area=0.030 ratio=0.20 dist=73cm
+[ 111.4s] ACERCAR[RECTO] cx=0.60 err=+0.10 area=0.030 ratio=0.20 dist=73cm
+[ 111.5s] ACERCAR[RECTO] cx=0.61 err=+0.11 area=0.030 ratio=0.20 dist=74cm
+[ 111.7s] ACERCAR[RECTO] cx=0.60 err=+0.10 area=0.030 ratio=0.20 dist=74cm
+[ 111.8s] ACERCAR[RECTO] cx=0.60 err=+0.10 area=0.030 ratio=0.20 dist=74cm
+[ 112.0s] ACERCAR[RECTO] cx=0.61 err=+0.11 area=0.030 ratio=0.20 dist=74cm
+[ 112.1s] ACERCAR[RECTO] cx=0.61 err=+0.11 area=0.030 ratio=0.20 dist=74cm
+[ 112.3s] ACERCAR[RECTO] cx=0.61 err=+0.11 area=0.031 ratio=0.20 dist=119cm
+[ 112.4s] ACERCAR[RECTO] cx=0.61 err=+0.11 area=0.031 ratio=0.20 dist=119cm
+[ 112.6s] ACERCAR[RECTO] cx=0.62 err=+0.12 area=0.033 ratio=0.22 dist=76cm
+[ 113.0s] ACERCAR[GIRA t=0.10] cx=0.62 err=+0.12 area=0.035 ratio=0.23 dist=74cm
+[ 113.2s] ACERCAR[RECTO] cx=0.52 err=+0.02 area=0.076 ratio=0.50 dist=63cm
+[ 113.3s] ACERCAR[RECTO] cx=0.52 err=+0.02 area=0.076 ratio=0.50 dist=15cm
+[ 113.5s] ACERCAR[RECTO] cx=0.52 err=+0.02 area=0.076 ratio=0.50 dist=14cm
+[ 113.6s] ACERCAR[RECTO] cx=0.52 err=+0.02 area=0.076 ratio=0.50 dist=14cm
+[ 113.8s] ACERCAR[RECTO] cx=0.52 err=+0.02 area=0.076 ratio=0.50 dist=14cm
+[ 113.9s] ACERCAR[RECTO] cx=0.51 err=+0.01 area=0.114 ratio=0.76 dist=13cm
+
+⚠ EVADIR: línea en x=0.57 y=0.81
+[ 115.9s] ACERCAR[GIRA t=0.30] cx=0.96 err=+0.46 area=0.020 ratio=0.13 dist=57cm
+[ 116.4s] ACERCAR[GIRA t=0.12] cx=0.65 err=+0.15 area=0.052 ratio=0.35 dist=69cm
+[ 116.5s] ACERCAR[RECTO] cx=0.55 err=+0.05 area=0.050 ratio=0.33 dist=17cm
+[ 116.7s] ACERCAR[RECTO] cx=0.55 err=+0.05 area=0.050 ratio=0.33 dist=17cm
+[ 116.8s] ACERCAR[RECTO] cx=0.55 err=+0.05 area=0.050 ratio=0.33 dist=16cm
+[ 117.0s] ACERCAR[RECTO] cx=0.55 err=+0.05 area=0.050 ratio=0.33 dist=16cm
+[ 117.1s] ACERCAR[RECTO] cx=0.55 err=+0.05 area=0.060 ratio=0.40 dist=16cm
+[ 117.3s] ACERCAR[RECTO] cx=0.56 err=+0.06 area=0.072 ratio=0.48 dist=16cm
+
+■ SEGURIDAD (HSV): cediendo control...
+
+⚠ EVADIR: línea en x=0.66 y=0.81
+[ 119.5s] ACERCAR[GIRA t=0.30] cx=0.91 err=+0.41 area=0.034 ratio=0.23 dist=74cm
+[ 119.7s] ACERCAR[RECTO] cx=0.60 err=+0.10 area=0.023 ratio=0.16 dist=91cm
+[ 119.8s] ACERCAR[RECTO] cx=0.60 err=+0.10 area=0.023 ratio=0.16 dist=91cm
+[ 119.9s] ACERCAR[RECTO] cx=0.60 err=+0.10 area=0.024 ratio=0.16 dist=245cm
+[ 120.1s] ACERCAR[RECTO] cx=0.60 err=+0.10 area=0.024 ratio=0.16 dist=245cm
+[ 120.2s] ACERCAR[RECTO] cx=0.60 err=+0.10 area=0.024 ratio=0.16 dist=245cm
+[ 120.4s] ACERCAR[RECTO] cx=0.60 err=+0.10 area=0.024 ratio=0.16 dist=245cm
+[ 120.9s] ACERCAR[GIRA t=0.11] cx=0.63 err=+0.13 area=0.031 ratio=0.21 dist=245cm
+[ 121.0s] ACERCAR[RECTO] cx=0.50 err=-0.00 area=0.045 ratio=0.30 dist=300cm
+[ 121.2s] ACERCAR[RECTO] cx=0.50 err=-0.00 area=0.042 ratio=0.28 dist=300cm
+[ 121.3s] ACERCAR[RECTO] cx=0.50 err=-0.00 area=0.042 ratio=0.28 dist=300cm
+[ 121.4s] ACERCAR[RECTO] cx=0.49 err=-0.01 area=0.043 ratio=0.29 dist=300cm
+[ 121.6s] ACERCAR[RECTO] cx=0.49 err=-0.01 area=0.043 ratio=0.29 dist=300cm
+[ 121.7s] ACERCAR[RECTO] cx=0.48 err=-0.02 area=0.044 ratio=0.30 dist=300cm
+[ 121.9s] ACERCAR[RECTO] cx=0.48 err=-0.02 area=0.046 ratio=0.31 dist=245cm
+[ 122.0s] ACERCAR[RECTO] cx=0.48 err=-0.02 area=0.047 ratio=0.31 dist=245cm
+[ 122.2s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.048 ratio=0.32 dist=181cm
+[ 122.3s] ACERCAR[RECTO] cx=0.48 err=-0.02 area=0.047 ratio=0.31 dist=181cm
+[ 122.5s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.048 ratio=0.32 dist=158cm
+[ 122.6s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.047 ratio=0.31 dist=78cm
+[ 122.8s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.049 ratio=0.32 dist=76cm
+[ 122.9s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.048 ratio=0.32 dist=76cm
+[ 123.0s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.049 ratio=0.32 dist=17cm
+[ 123.2s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.049 ratio=0.32 dist=16cm
+[ 123.3s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.048 ratio=0.32 dist=16cm
+[ 123.5s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.048 ratio=0.32 dist=16cm
+[ 123.6s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.049 ratio=0.32 dist=16cm
+[ 123.8s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.049 ratio=0.32 dist=16cm
+[ 123.9s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.049 ratio=0.32 dist=16cm
+[ 124.1s] ACERCAR[RECTO] cx=0.47 err=-0.03 area=0.049 ratio=0.32 dist=16cm
+[ 124.2s] ACERCAR[RECTO] cx=0.46 err=-0.04 area=0.051 ratio=0.34 dist=16cm
+[ 124.4s] ACERCAR[RECTO] cx=0.46 err=-0.04 area=0.051 ratio=0.34 dist=16cm
+[ 124.5s] ACERCAR[RECTO] cx=0.46 err=-0.04 area=0.055 ratio=0.37 dist=16cm
+
+■ SEGURIDAD (HSV): cediendo control...
+[ 125.1s] ACERCAR[P-AVANCE] cx=0.44 err=-0.06 area=0.127 ratio=0.85 dist=16cm
+
+✓ RECOGER: area=0.164 cx=0.41
+  Bola #6 recogida. Soltando...
+  Esperando 2s...
+[ 131.7s] ACERCAR[GIRA t=0.30] cx=0.86 err=+0.36 area=0.078 ratio=0.52 dist=256cm
+[ 132.1s] ACERCAR[GIRA t=0.13] cx=0.34 err=-0.16 area=0.159 ratio=1.06 dist=7cm
+
+✓ RECOGER: area=0.151 cx=0.43
+^C  Bola #7 recogida. Soltando...
+^C^C^C^C^C^C  Esperando 2s...
