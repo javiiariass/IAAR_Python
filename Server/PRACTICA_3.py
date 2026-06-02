@@ -79,7 +79,10 @@ DIST_OBSTACULO = 20.0    # Distancia (cm) para parada de emergencia por obstácu
 DIST_OBSTACULO_LEJOS = 35.0  # Distancia (cm) para empezar a esquivar suavemente
 
 # Bola (detección YOLO)
-AREA_RECOGER = 0.06      # Área relativa de la bola para considerar "suficientemente cerca"
+AREA_RECOGER = 0.06      # Área relativa de la bola al alcance de la pinza (CALIBRAR con --test-percepcion)
+BOLA_CENTRADA = 0.12     # |error| por debajo → centrada (avanza recto / puede recoger)
+BOLA_GIRO_PIVOTE = 0.20  # |error| por encima → pivota en el sitio para centrar rápido
+VEL_GIRO_BOLA = 1000     # Velocidad de pivote al centrar la bola (subir si la oruga débil no pivota)
 
 # Línea verde (HSV, Capa 1) — del PRACTICA_2_solo_vision.py
 HSV_VERDE_BAJO = (40, 50, 50)
@@ -585,21 +588,24 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
             tiempo_sin_bola = time.time()
             tiempo_ultima_bola = time.time()
 
-            sonar_cerca = 0 < distancia <= DIST_RECOGER
-            bola_grande = bola_area > AREA_RECOGER
+            error = bola_cx - 0.5
+            abs_err = abs(error)
+            centrada = abs_err < BOLA_CENTRADA
 
-            # --- ¿Demasiado cerca? La pinza no llega si está pegada ---
-            bola_enorme = bola_area > AREA_RECOGER * 3
-            if bola_enorme or (sonar_cerca and distancia < DIST_RECOGER * 0.5):
+            # --- ¿Demasiado cerca? La pinza no llega si está pegada (área enorme) ---
+            if bola_area > AREA_RECOGER * 2.5:
                 estado_fsm = "RETROCEDER"
-                print(f"\r← MUY CERCA: area={bola_area:.3f} dist={distancia:.1f}cm → retrocediendo", end="")
+                print(f"\r← MUY CERCA: area={bola_area:.3f} → retrocediendo        ", end="")
                 retroceder(motor, "deliberativa", estado, 0.2)
                 continue
 
-            # --- ¿Recoger? Ambos sensores confirman, o la bola es obvia ---
-            if (sonar_cerca and bola_grande) or bola_area > AREA_RECOGER * 2.5:
+            # --- ¿Recoger? Solo si está CENTRADA y a tamaño de recogida ---
+            # El ÁREA de YOLO es el indicador de distancia fiable para una bola
+            # (el sonar rebota mal en una bola pequeña). Centrar antes garantiza
+            # que la bola queda enfrente de la pinza → parada repetible.
+            if centrada and bola_area >= AREA_RECOGER:
                 estado_fsm = "RECOGER"
-                print(f"\n✓ RECOGER: dist={distancia:.1f}cm area={bola_area:.3f}")
+                print(f"\n✓ RECOGER: area={bola_area:.3f} cx={bola_cx:.2f}")
 
                 detener(motor, "deliberativa")
                 dormir(0.3, estado)
@@ -620,28 +626,33 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
                 tiempo_sin_bola = time.time()
                 continue
 
-            # --- Acercarse a la bola: giro proporcional al error de centrado ---
+            # --- Acercarse: PRIMERO centrar (pivotando), LUEGO avanzar ---
             estado_fsm = "ACERCAR"
-            error = bola_cx - 0.5
-
-            if (0 < distancia < DIST_FRENAR) or bola_grande:
-                vel = VEL_FRENADO
-            else:
-                vel = VEL_ACERCAR
-
-            if abs(error) < 0.15:
-                avanzar(motor, "deliberativa", vel)
-            else:
-                factor_lenta = max(0.0, 0.65 - abs(error) * 1.5)
-                vel_rapida = int(vel)
-                vel_lenta = int(vel * factor_lenta)
+            if abs_err > BOLA_GIRO_PIVOTE:
+                # Muy descentrada → pivota EN EL SITIO para centrar rápido.
+                # Contrarrotar no depende de la velocidad de avance: no se arrastra.
                 if error > 0:
-                    motor.mover("deliberativa", -vel_rapida, -int(vel_lenta * FACTOR_CORRECCION))
+                    girar_derecha(motor, "deliberativa", VEL_GIRO_BOLA)
                 else:
-                    motor.mover("deliberativa", -vel_lenta, -int(vel_rapida * FACTOR_CORRECCION))
+                    girar_izquierda(motor, "deliberativa", VEL_GIRO_BOLA)
+                modo = "PIVOTA"
+            else:
+                # Bastante centrada → avanzar (más lento cuanto más grande/cerca)
+                vel = VEL_FRENADO if bola_area > AREA_RECOGER * 0.6 else VEL_ACERCAR
+                if centrada:
+                    avanzar(motor, "deliberativa", vel)
+                    modo = "RECTO"
+                else:
+                    # Arco suave, pero rueda interior con un mínimo (no se para)
+                    vel_lenta = int(vel * 0.45)
+                    if error > 0:
+                        motor.mover("deliberativa", -vel, -int(vel_lenta * FACTOR_CORRECCION))
+                    else:
+                        motor.mover("deliberativa", -vel_lenta, -int(vel * FACTOR_CORRECCION))
+                    modo = "ARCO"
 
-            print(f"\r→ ACERCAR: cx={bola_cx:.2f} err={error:+.2f} "
-                  f"area={bola_area:.3f} dist={distancia:.0f}cm vel={vel}    ", end="")
+            print(f"\r→ ACERCAR[{modo}]: cx={bola_cx:.2f} err={error:+.2f} "
+                  f"area={bola_area:.3f} dist={distancia:.0f}cm        ", end="")
             continue
 
         # ==========================================================
