@@ -81,10 +81,10 @@ DIST_OBSTACULO_LEJOS = 35.0  # Distancia (cm) para empezar a esquivar suavemente
 # Bola (detección YOLO)
 AREA_RECOGER = 0.150      # Área relativa de la bola al alcance de la pinza (CALIBRAR con --test-percepcion)
 BOLA_CENTRADA = 0.12     # |error| por debajo → centrada (avanza recto / puede recoger)
-VEL_GIRO_BOLA = 1000     # Velocidad de pivote al centrar la bola (≥VEL_GIRO o no rota; subir si calla)
-RATIO_APROX_FINA = 0.7   # area/AREA_RECOGER por encima → aproximación a PULSOS (poco a poco)
+VEL_GIRO_BOLA = 900     # Velocidad de pivote al centrar la bola (≥VEL_GIRO o no rota; subir si calla)
+RATIO_APROX_FINA = 0.8   # area/AREA_RECOGER por encima → aproximación a PULSOS (poco a poco)
 PULSO_AVANCE = 0.10      # s de avance en cada pulso de la aproximación fina (bajar si se pasa)
-PULSO_GIRO = 0.14        # s de pivote en cada pulso de centrado cercano (bajar si se pasa de vuelta)
+PULSO_GIRO = 0.10        # s de pivote en cada pulso de centrado cercano (bajar si se pasa de vuelta)
 PULSO_PAUSA = 0.20       # s de pausa entre pulsos para que YOLO reevalúe
 TIMEOUT_ACERCAR = 7      # s máx en ACERCAR sin recoger → retrocede y re-busca (anti-atasco)
 
