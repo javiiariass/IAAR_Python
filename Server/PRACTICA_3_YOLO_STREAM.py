@@ -449,19 +449,27 @@ def main():
                 error = bola_cx - 0.5  # Negativo=izquierda, positivo=derecha
 
                 # Velocidad: combinar señales de sonar y cámara
-                # Frenar si CUALQUIERA indica cercanía
                 if (0 < distancia < DIST_FRENAR) or bola_grande:
                     vel = VEL_FRENADO
                 else:
                     vel = VEL_ACERCAR
 
-                # Dirigirse: centrar la bola en el frame
-                if abs(error) < 0.10:
+                # Dirigirse: giro proporcional al error
+                if abs(error) < 0.15:
+                    # Bola suficientemente centrada → avanzar recto
                     avanzar(motor, vel)
-                elif error > 0:
-                    girar_suave_derecha(motor, vel)
                 else:
-                    girar_suave_izquierda(motor, vel)
+                    # Factor de giro proporcional: más error → más diferencia entre ruedas
+                    # error va de 0.15 a 0.5 → factor de 0.5 (suave) a 0.0 (giro fuerte)
+                    factor_lenta = max(0.0, 0.65 - abs(error) * 1.5)
+                    vel_rapida = int(vel)
+                    vel_lenta = int(vel * factor_lenta)
+                    if error > 0:
+                        # Bola a la derecha → rueda derecha más lenta
+                        motor.setMotorModel(-vel_rapida, -int(vel_lenta * FACTOR_CORRECCION))
+                    else:
+                        # Bola a la izquierda → rueda izquierda más lenta
+                        motor.setMotorModel(-vel_lenta, -int(vel_rapida * FACTOR_CORRECCION))
 
                 print(f"\r→ ACERCAR: cx={bola_cx:.2f} err={error:+.2f} "
                       f"area={bola_area:.3f} dist={distancia:.0f}cm vel={vel}    ", end="")

@@ -442,12 +442,17 @@ def main():
                 else:
                     vel = VEL_ACERCAR
 
-                if abs(error) < 0.10:
+                # Dirigirse: giro proporcional al error
+                if abs(error) < 0.15:
                     avanzar(motor, vel)
-                elif error > 0:
-                    girar_suave_derecha(motor, vel)
                 else:
-                    girar_suave_izquierda(motor, vel)
+                    factor_lenta = max(0.0, 0.65 - abs(error) * 1.5)
+                    vel_rapida = int(vel)
+                    vel_lenta = int(vel * factor_lenta)
+                    if error > 0:
+                        motor.setMotorModel(-vel_rapida, -int(vel_lenta * FACTOR_CORRECCION))
+                    else:
+                        motor.setMotorModel(-vel_lenta, -int(vel_rapida * FACTOR_CORRECCION))
 
                 print(f"\r→ ACERCAR: cx={bola_cx:.2f} err={error:+.2f} "
                       f"area={bola_area:.3f} dist={distancia:.0f}cm vel={vel}    ", end="")

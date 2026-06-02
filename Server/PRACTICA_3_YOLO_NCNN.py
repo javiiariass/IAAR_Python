@@ -1,5 +1,5 @@
 """
-PRACTICA_3_YOLO_NCNN.py — Comportamiento deliberativo con YOLO (motor NCNN).
+PRACTICA_3_YOLO_NCNN.py — Comportamiento deliberativo con YOLO (motor NCNN, sin streaming).
 
 Versión que usa NCNN en vez de ONNX para la inferencia.
 NCNN está optimizado para ARM (Raspberry Pi) y suele dar más FPS.
@@ -11,8 +11,8 @@ Requisitos extra en la RPi:
   pip install ncnn --break-system-packages
 
 Archivos del modelo necesarios en Server/:
-  best_ncnn_model/best.ncnn.param
-  best_ncnn_model/best.ncnn.bin
+  best_ncnn_model/model.ncnn.param
+  best_ncnn_model/model.ncnn.bin
 
 Uso:
   sudo python PRACTICA_3_YOLO_NCNN.py           → busca indefinidamente
@@ -34,33 +34,26 @@ from yolo_inferencia_ncnn import YOLODetectorNCNN
 # CONSTANTES — Ajustar según pruebas en el robot real
 # =====================================================================
 
-# Velocidades del motor (duty cycle, rango 0-4095)
-# Nota: valores NEGATIVOS = avanzar (motores invertidos)
-VEL_EXPLORAR = 850       # Velocidad al buscar bola (no muy alta para que la cámara no vibre)
-VEL_ACERCAR = 600        # Velocidad al dirigirse hacia una bola vista
-VEL_FRENADO = 350        # Velocidad de aproximación final (sonar < 15cm)
-VEL_GIRO = 1200          # Velocidad de giro sobre sí mismo
+VEL_EXPLORAR = 900
+VEL_ACERCAR = 800
+VEL_FRENADO = 350
+VEL_GIRO = 1200
 
-# Factor de corrección del motor derecho (el derecho gira más lento)
 FACTOR_CORRECCION = 1.2
 
-# Sonar
-DIST_RECOGER = 7.0       # Distancia (cm) a la que la bola está al alcance de la pinza
-DIST_FRENAR = 15.0       # Distancia (cm) a la que empezar a reducir velocidad
-DIST_OBSTACULO = 15.0    # Distancia (cm) para parada de emergencia por obstáculo
-DIST_OBSTACULO_LEJOS = 30.0  # Distancia (cm) para empezar a esquivar suavemente
+DIST_RECOGER = 7.0
+DIST_FRENAR = 15.0
+DIST_OBSTACULO = 15.0
+DIST_OBSTACULO_LEJOS = 30.0
 
-# Bola (detección YOLO)
-AREA_RECOGER = 0.08      # Área relativa de la bola para considerar "suficientemente cerca"
+AREA_RECOGER = 0.05
 
-# Tiempos
-TIMEOUT_BUSQUEDA = 6     # Segundos sin ver bola antes de girar para explorar
-PAUSA_TRAS_SOLTAR = 1.5  # Segundos de espera después de soltar bola
+TIMEOUT_BUSQUEDA = 6
+PAUSA_TRAS_SOLTAR = 1.5
 
-# Servo ángulos
 PINZA_ABIERTA = 90
 PINZA_CERRADA = 135
-BRAZO_ARRIBA = 140   # probar con 150
+BRAZO_ARRIBA = 140
 BRAZO_ABAJO = 90
 
 
@@ -69,28 +62,23 @@ BRAZO_ABAJO = 90
 # =====================================================================
 
 def avanzar(motor, velocidad):
-    """Avanzar recto. Velocidad positiva = avanzar (se invierte internamente)."""
     motor.setMotorModel(-velocidad, int(-velocidad * FACTOR_CORRECCION))
 
 
 def girar_izquierda(motor, velocidad=VEL_GIRO):
-    """Girar sobre sí mismo hacia la izquierda."""
     motor.setMotorModel(velocidad, -velocidad)
 
 
 def girar_derecha(motor, velocidad=VEL_GIRO):
-    """Girar sobre sí mismo hacia la derecha."""
     motor.setMotorModel(-velocidad, velocidad)
 
 
 def girar_suave_izquierda(motor, velocidad=VEL_ACERCAR):
-    """Avanzar girando suavemente a la izquierda (rueda izq más lenta)."""
-    motor.setMotorModel(-int(velocidad * 0.3), -int(velocidad * FACTOR_CORRECCION))
+    motor.setMotorModel(-int(velocidad * 0.55), -int(velocidad * FACTOR_CORRECCION))
 
 
 def girar_suave_derecha(motor, velocidad=VEL_ACERCAR):
-    """Avanzar girando suavemente a la derecha (rueda der más lenta)."""
-    motor.setMotorModel(-velocidad, -int(velocidad * 0.3 * FACTOR_CORRECCION))
+    motor.setMotorModel(-velocidad, -int(velocidad * 0.55 * FACTOR_CORRECCION))
 
 
 def detener(motor):
@@ -98,7 +86,6 @@ def detener(motor):
 
 
 def retroceder(motor, tiempo=0.4):
-    """Retroceder un poco (valores positivos = marcha atrás)."""
     motor.setMotorModel(900, int(900 * FACTOR_CORRECCION))
     time.sleep(tiempo)
     detener(motor)
@@ -109,39 +96,28 @@ def retroceder(motor, tiempo=0.4):
 # =====================================================================
 
 def levantar_gancho(servo):
-    """Posición inicial: pinza abierta, brazo arriba."""
     servo.setServoAngle('0', PINZA_ABIERTA)
     servo.setServoAngle('1', BRAZO_ARRIBA)
     time.sleep(0.5)
 
 
 def coger_bola(servo):
-    """
-    Secuencia de recogida: abrir pinza → bajar brazo despacio → cerrar → subir.
-    IMPORTANTE: la pinza tapa la cámara al bajar, así que el robot
-    debe estar bien posicionado ANTES de llamar a esta función.
-    """
-    # 1. Asegurar pinza abierta
     servo.setServoAngle('0', PINZA_ABIERTA)
     time.sleep(0.3)
 
-    # 2. Bajar brazo despacio (de 140° a 90°, de 2 en 2)
     for angle in range(BRAZO_ARRIBA, BRAZO_ABAJO, -2):
         servo.setServoAngle('1', angle)
         time.sleep(0.02)
     time.sleep(0.3)
 
-    # 3. Cerrar pinza
     servo.setServoAngle('0', PINZA_CERRADA)
     time.sleep(0.5)
 
-    # 4. Subir brazo con la bola
     servo.setServoAngle('1', BRAZO_ARRIBA)
     time.sleep(0.5)
 
 
 def soltar_bola(servo):
-    """Abrir pinza para soltar la bola."""
     servo.setServoAngle('0', PINZA_ABIERTA)
     time.sleep(0.5)
 
@@ -151,41 +127,27 @@ def soltar_bola(servo):
 # =====================================================================
 
 def evadir_linea(motor, line_info):
-    """
-    Ejecuta la maniobra de evasión según dónde esté la línea.
-    Siempre retrocede primero y luego gira en dirección OPUESTA a la línea.
-
-    Args:
-        motor: instancia de tankMotor
-        line_info: dict devuelto por YOLODetector.get_line_info()
-    """
     pos_x = line_info["posicion_x"]
     esquina = line_info["esquina"]
 
-    # Primero: frenar y retroceder
     detener(motor)
     time.sleep(0.1)
     retroceder(motor, 0.5)
 
     if esquina:
-        # Esquina: líneas a ambos lados → girar 180° (retroceder más y girar mucho)
         retroceder(motor, 0.3)
-        # Girar en la dirección donde haya más espacio (donde la línea esté más lejos)
         if pos_x > 0.5:
             girar_izquierda(motor, VEL_GIRO)
         else:
             girar_derecha(motor, VEL_GIRO)
         time.sleep(random.uniform(0.8, 1.3))
     elif pos_x > 0.6:
-        # Línea a la derecha → girar a la izquierda
         girar_izquierda(motor, VEL_GIRO)
         time.sleep(random.uniform(0.4, 0.8))
     elif pos_x < 0.4:
-        # Línea a la izquierda → girar a la derecha
         girar_derecha(motor, VEL_GIRO)
         time.sleep(random.uniform(0.4, 0.8))
     else:
-        # Línea centrada (delante) → girar a un lado aleatorio
         if random.random() > 0.5:
             girar_izquierda(motor, VEL_GIRO)
         else:
@@ -200,7 +162,7 @@ def evadir_linea(motor, line_info):
 # =====================================================================
 
 def main():
-    parser = argparse.ArgumentParser(description="Práctica 3 — Robot con YOLO")
+    parser = argparse.ArgumentParser(description="Práctica 3 — Robot con YOLO (NCNN)")
     parser.add_argument("--bolas", type=int, default=-1,
                         help="Número de bolas a recoger (-1 = indefinido)")
     args = parser.parse_args()
@@ -209,7 +171,7 @@ def main():
     bolas_recogidas = 0
 
     print("=" * 50)
-    print(" PRÁCTICA 3: COMPORTAMIENTO DELIBERATIVO CON YOLO")
+    print(" PRÁCTICA 3: COMPORTAMIENTO DELIBERATIVO (NCNN)")
     print("=" * 50)
     if total_bolas > 0:
         print(f"Objetivo: recoger {total_bolas} bolas")
@@ -221,7 +183,6 @@ def main():
     motor = tankMotor()
     servo = Servo()
     sonar = Ultrasonic()
-    # umbral de detección (confianza) — usa NCNN en vez de ONNX
     detector = YOLODetectorNCNN("best_ncnn_model", conf_threshold=0.40)
 
     levantar_gancho(servo)
@@ -233,16 +194,15 @@ def main():
     # --- Variables de estado ---
     estado = "BUSCAR"
     tiempo_sin_bola = time.time()
-    dir_esquiva_obstaculo = None  # "izq" o "der", se fija al detectar obstáculo
+    tiempo_ultima_bola = 0
+    dir_esquiva_obstaculo = None
 
     try:
         while True:
-            # ¿Hemos terminado?
             if total_bolas > 0 and bolas_recogidas >= total_bolas:
                 print(f"\n¡Objetivo cumplido! {bolas_recogidas}/{total_bolas} bolas recogidas.")
                 break
 
-            # --- Capturar frame ---
             frame_bytes = cap.get_frame()
             if frame_bytes is None:
                 time.sleep(0.01)
@@ -263,41 +223,40 @@ def main():
             # --- Sonar ---
             distancia = sonar.get_distance()
             if distancia < 0:
-                distancia = 999.0  # Error de lectura → asumir lejos
+                distancia = 999.0
 
             # ==========================================================
             # PRIORIDAD 1: EVASIÓN DE LÍNEA VERDE
-            # Solo si la línea está en el tercio inferior (peligro real)
             # ==========================================================
             if line_info["peligro"]:
-                if estado != "EVADIR":
-                    esquina_txt = " (ESQUINA)" if line_info["esquina"] else ""
-                    print(f"\n⚠ EVADIR: línea en x={line_info['posicion_x']:.2f}{esquina_txt}")
-                estado = "EVADIR"
-                evadir_linea(motor, line_info)
-                estado = "BUSCAR"
-                tiempo_sin_bola = time.time()
-                continue
+                linea_inminente = line_info["posicion_y"] > 0.80
+                bola_cerca = bola_encontrada and bola_area > AREA_RECOGER * 0.5
+                if bola_cerca:
+                    evadir_ahora = linea_inminente
+                else:
+                    evadir_ahora = not bola_encontrada or linea_inminente
+
+                if evadir_ahora:
+                    if estado != "EVADIR":
+                        esquina_txt = " (ESQUINA)" if line_info["esquina"] else ""
+                        print(f"\n⚠ EVADIR: línea en x={line_info['posicion_x']:.2f} "
+                              f"y={line_info['posicion_y']:.2f}{esquina_txt}")
+                    estado = "EVADIR"
+                    evadir_linea(motor, line_info)
+                    estado = "BUSCAR"
+                    tiempo_sin_bola = time.time()
+                    continue
 
             # ==========================================================
-            # PRIORIDAD 1b: OBSTÁCULO DETECTADO POR SONAR (caja)
-            # Solo si NO hay bola delante (si hay bola, el sonar la ve)
-            #
-            # Dos niveles:
-            #  - Lejos (DIST_OBSTACULO < d < DIST_OBSTACULO_LEJOS):
-            #    esquivar suavemente, avanzar curvando hacia un lado
-            #  - Cerca (d < DIST_OBSTACULO):
-            #    parada de emergencia, retroceder y girar fuerte
+            # PRIORIDAD 1b: OBSTÁCULO DETECTADO POR SONAR
             # ==========================================================
-            if not bola_encontrada and 0 < distancia < DIST_OBSTACULO_LEJOS:
+            bola_reciente = (time.time() - tiempo_ultima_bola) < 1.0
+            if not bola_encontrada and not bola_reciente and 0 < distancia < DIST_OBSTACULO_LEJOS:
 
-                # Fijar dirección de esquiva al primer contacto
-                # y mantenerla mientras siga detectando obstáculo
                 if dir_esquiva_obstaculo is None:
                     dir_esquiva_obstaculo = random.choice(["izq", "der"])
 
                 if distancia < DIST_OBSTACULO:
-                    # --- CERCA: parada de emergencia ---
                     if estado != "EVADIR":
                         print(f"\n⚠ OBSTÁCULO CERCA: sonar={distancia:.1f}cm")
                     estado = "EVADIR"
@@ -310,12 +269,11 @@ def main():
                         girar_derecha(motor, VEL_GIRO)
                     time.sleep(random.uniform(0.5, 1.0))
                     detener(motor)
-                    dir_esquiva_obstaculo = None  # Resetear para el próximo obstáculo
+                    dir_esquiva_obstaculo = None
                     estado = "BUSCAR"
                     tiempo_sin_bola = time.time()
                     continue
                 else:
-                    # --- LEJOS: esquivar suavemente curvando ---
                     estado = "EVADIR"
                     if dir_esquiva_obstaculo == "izq":
                         girar_suave_izquierda(motor, VEL_ACERCAR)
@@ -325,7 +283,6 @@ def main():
                           f"curvando {dir_esquiva_obstaculo}    ", end="")
                     continue
             else:
-                # No hay obstáculo → resetear dirección de esquiva
                 dir_esquiva_obstaculo = None
 
             # ==========================================================
@@ -333,9 +290,21 @@ def main():
             # ==========================================================
             if bola_encontrada:
                 tiempo_sin_bola = time.time()
+                tiempo_ultima_bola = time.time()
 
-                # --- ¿Suficientemente cerca para recoger? ---
-                if distancia <= DIST_RECOGER or bola_area > AREA_RECOGER:
+                sonar_cerca = 0 < distancia <= DIST_RECOGER
+                bola_grande = bola_area > AREA_RECOGER
+
+                # --- ¿Demasiado cerca? ---
+                bola_enorme = bola_area > AREA_RECOGER * 3
+                if bola_enorme or (sonar_cerca and distancia < DIST_RECOGER * 0.5):
+                    estado = "RETROCEDER"
+                    print(f"\r← MUY CERCA: area={bola_area:.3f} dist={distancia:.1f}cm → retrocediendo", end="")
+                    retroceder(motor, 0.2)
+                    continue
+
+                # --- ¿Recoger? ---
+                if (sonar_cerca and bola_grande) or bola_area > AREA_RECOGER * 2.5:
                     estado = "RECOGER"
                     print(f"\n✓ RECOGER: dist={distancia:.1f}cm area={bola_area:.3f}")
 
@@ -346,56 +315,49 @@ def main():
                     bolas_recogidas += 1
                     print(f"  Bola #{bolas_recogidas} recogida. Soltando...")
 
-                    # Soltar la bola donde está
                     soltar_bola(servo)
-
-                    # Levantar brazo para despejar la cámara
                     levantar_gancho(servo)
 
-                    # Esperar a que alguien retire la bola
                     print(f"  Esperando {PAUSA_TRAS_SOLTAR}s...")
                     time.sleep(PAUSA_TRAS_SOLTAR)
 
-                    # Retroceder un poco para no re-detectar
                     retroceder(motor, 0.3)
 
                     estado = "BUSCAR"
                     tiempo_sin_bola = time.time()
                     continue
 
-                # --- Acercarse a la bola ---
+                # --- Acercarse ---
                 estado = "ACERCAR"
-                error = bola_cx - 0.5  # Negativo=izquierda, positivo=derecha
+                error = bola_cx - 0.5
 
-                # Decidir velocidad según distancia sonar
-                if 0 < distancia < DIST_FRENAR:
+                if (0 < distancia < DIST_FRENAR) or bola_grande:
                     vel = VEL_FRENADO
                 else:
                     vel = VEL_ACERCAR
 
-                # Dirigirse: centrar la bola en el frame
-                if abs(error) < 0.10:
-                    # Bola centrada → avanzar recto
+                if abs(error) < 0.15:
                     avanzar(motor, vel)
-                elif error > 0:
-                    # Bola a la derecha → girar suave a la derecha
-                    girar_suave_derecha(motor, vel)
                 else:
-                    # Bola a la izquierda → girar suave a la izquierda
-                    girar_suave_izquierda(motor, vel)
+                    factor_lenta = max(0.0, 0.65 - abs(error) * 1.5)
+                    vel_rapida = int(vel)
+                    vel_lenta = int(vel * factor_lenta)
+                    if error > 0:
+                        motor.setMotorModel(-vel_rapida, -int(vel_lenta * FACTOR_CORRECCION))
+                    else:
+                        motor.setMotorModel(-vel_lenta, -int(vel_rapida * FACTOR_CORRECCION))
 
                 print(f"\r→ ACERCAR: cx={bola_cx:.2f} err={error:+.2f} "
-                      f"dist={distancia:.0f}cm vel={vel}    ", end="")
+                      f"area={bola_area:.3f} dist={distancia:.0f}cm vel={vel}    ", end="")
                 continue
 
             # ==========================================================
-            # PRIORIDAD 3: BUSCAR (no hay bola visible)
+            # PRIORIDAD 3: BUSCAR
             # ==========================================================
             estado = "BUSCAR"
             elapsed = time.time() - tiempo_sin_bola
 
             if elapsed > TIMEOUT_BUSQUEDA:
-                # Mucho tiempo sin ver bola → girar para explorar
                 print(f"\n↻ BUSCAR: girando ({elapsed:.0f}s sin bola)...")
                 if random.random() > 0.5:
                     girar_izquierda(motor, VEL_GIRO)
@@ -405,7 +367,6 @@ def main():
                 detener(motor)
                 tiempo_sin_bola = time.time()
             else:
-                # Avanzar recto buscando
                 avanzar(motor, VEL_EXPLORAR)
                 print(f"\r○ BUSCAR: {elapsed:.0f}s sin bola | "
                       f"dist={distancia:.0f}cm    ", end="")
