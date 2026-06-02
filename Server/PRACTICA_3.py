@@ -99,10 +99,10 @@ HSV_ROI_DESDE = 2.0 / 3.0    # ROI = tercio inferior del frame
 #   más bajo (p.ej. 0.6) → tolera la línea desde más lejos (más agresivo)
 #   más alto (p.ej. 1.0) → solo la ignora casi pegado (más prudente)
 # La Capa 0 (IR) NUNCA se anula: sigue siendo el backstop anti-caída.
-RATIO_SUPRIMIR_LINEA = 0.9
+RATIO_SUPRIMIR_LINEA = 0.1
 
 # Tiempos
-TIMEOUT_BUSQUEDA = 10    # Segundos sin ver bola antes de girar para explorar
+TIMEOUT_BUSQUEDA = 20    # Segundos sin ver bola antes de girar para explorar
 PAUSA_TRAS_SOLTAR = 2    # Segundos de espera después de soltar bola
 IR_PERIODO = 0.02        # Periodo de muestreo del hilo IR (~50 Hz)
 IR_RETROCESO_EXTRA = 0.25  # Retroceso adicional al despejarse el IR (separa de la línea)
