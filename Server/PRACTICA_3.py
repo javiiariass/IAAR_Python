@@ -79,7 +79,7 @@ DIST_OBSTACULO = 20.0    # Distancia (cm) para parada de emergencia por obstácu
 DIST_OBSTACULO_LEJOS = 35.0  # Distancia (cm) para empezar a esquivar suavemente
 
 # Bola (detección YOLO)
-AREA_RECOGER = 0.06      # Área relativa de la bola al alcance de la pinza (CALIBRAR con --test-percepcion)
+AREA_RECOGER = 0.150      # Área relativa de la bola al alcance de la pinza (CALIBRAR con --test-percepcion)
 BOLA_CENTRADA = 0.12     # |error| por debajo → centrada (avanza recto / puede recoger)
 BOLA_GIRO_PIVOTE = 0.20  # |error| por encima → pivota en el sitio para centrar rápido
 VEL_GIRO_BOLA = 1000     # Velocidad de pivote al centrar la bola (subir si la oruga débil no pivota)
@@ -599,11 +599,12 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
                 retroceder(motor, "deliberativa", estado, 0.2)
                 continue
 
-            # --- ¿Recoger? Solo si está CENTRADA y a tamaño de recogida ---
-            # El ÁREA de YOLO es el indicador de distancia fiable para una bola
-            # (el sonar rebota mal en una bola pequeña). Centrar antes garantiza
-            # que la bola queda enfrente de la pinza → parada repetible.
-            if centrada and bola_area >= AREA_RECOGER:
+            # --- ¿Recoger? ---
+            # El ÁREA de YOLO es el indicador de distancia fiable (el sonar rebota
+            # mal en una bola pequeña). Recoge si está a tamaño Y centrada, O si ya
+            # es claramente grande aunque el centrado no sea perfecto: cuando está
+            # muy cerca el cx baila, y si esperásemos a centrar el robot no pararía.
+            if bola_area >= AREA_RECOGER and (centrada or bola_area >= AREA_RECOGER * 1.5):
                 estado_fsm = "RECOGER"
                 print(f"\n✓ RECOGER: area={bola_area:.3f} cx={bola_cx:.2f}")
 
