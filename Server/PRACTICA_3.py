@@ -482,6 +482,7 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
     tiempo_ultima_bola = 0          # Última vez que YOLO vio bola (grace period sonar)
     dir_esquiva_obstaculo = None    # "izq"/"der", se fija al detectar obstáculo
     en_seguridad = False            # Para imprimir el cambio a SEGURIDAD una sola vez
+    causa_seguridad = None          # "IR"/"HSV": qué capa de seguridad tomó el control
     tiempo_inicio_acercar = 0       # Cuándo entró en ACERCAR (para el timeout anti-atasco)
 
     t0 = time.time()
@@ -514,8 +515,14 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
         if distancia < 0:
             distancia = 999.0
 
-        # Bola en el borde → pedir a la Capa 1 que NO frene (acercamiento lento)
-        estado.suprimir_linea = bola_en_borde(detecciones, bola_encontrada, bola_area)
+        # Suprimir el frenado por verde (Capa 1) cuando hay una bola que coger pegada:
+        # en el borde (intersección de bboxes) o ya en APROXIMACIÓN FINAL (ratio alto).
+        # Así no se aleja de una bola que está junto a la línea. La Capa 0 (IR) sigue
+        # siendo el backstop si llegara al borde de verdad.
+        bola_en_aproximacion = (bola_encontrada and
+                                bola_area >= AREA_RECOGER * RATIO_APROX_FINA)
+        estado.suprimir_linea = (bola_en_aproximacion or
+                                 bola_en_borde(detecciones, bola_encontrada, bola_area))
 
         # --- Streaming ---
         if tcp_server is not None:
@@ -530,13 +537,30 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
         # ==========================================================
         if estado.peligro_ir or estado.peligro_hsv:
             if not en_seguridad:
-                cual = "IR" if estado.peligro_ir else "HSV"
-                print(f"\n■ SEGURIDAD ({cual}): cediendo control...")
+                causa_seguridad = "IR" if estado.peligro_ir else "HSV"
+                print(f"\n■ SEGURIDAD ({causa_seguridad}): cediendo control...")
                 en_seguridad = True
             estado_fsm = "SEGURIDAD"
             dormir(0.02, estado)
             continue
-        en_seguridad = False
+
+        # Salida de seguridad: la capa de seguridad solo retrocede RECTO. Si no giramos,
+        # la deliberativa vuelve a avanzar hacia la misma línea → bucle avanza/retrocede.
+        # Tras una emergencia de línea, retrocedemos un poco más y GIRAMOS para escapar.
+        if en_seguridad:
+            en_seguridad = False
+            print("\n↩ Escape de línea: retrocede y gira")
+            retroceder(motor, "deliberativa", estado, 0.3)
+            # Girar hacia el lado contrario a la línea (si YOLO la ubica), si no, izquierda
+            if line_info["detectada"] and line_info["posicion_x"] < 0.5:
+                girar_derecha(motor, "deliberativa", VEL_GIRO)
+            else:
+                girar_izquierda(motor, "deliberativa", VEL_GIRO)
+            dormir(random.uniform(0.5, 0.9), estado)
+            detener(motor, "deliberativa")
+            estado_fsm = "BUSCAR"
+            tiempo_sin_bola = time.time()
+            continue
 
         # ==========================================================
         # PRIORIDAD 1: EVASIÓN DE LÍNEA (YOLO, giro estratégico de salida)
