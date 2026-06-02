@@ -671,36 +671,51 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
 # =====================================================================
 
 def modo_test_motor(estado, motor):
-    """Verifica el cableado del motor y el árbitro de prioridad IR>HSV>delib."""
+    """Prueba cada oruga POR SEPARADO y luego el árbitro de prioridad IR>HSV>delib."""
     print("\n=== TEST MOTOR + ÁRBITRO DE PRIORIDAD ===")
-    print("Cada paso imprime si el comando se APLICÓ (True) o quedó en no-op (False).\n")
+    print("Velocidad de prueba alta (1500) para descartar zona muerta del PWM.")
+    print("Recuerda: negativo = avanzar, positivo = marcha atrás.\n")
 
-    print("1) deliberativa avanza 1s")
-    print("   aplicado:", motor.mover("deliberativa", -VEL_EXPLORAR, -VEL_EXPLORAR))
-    dormir(1.0, estado)
-    detener(motor, "deliberativa")
-    dormir(0.5, estado)
+    VEL = 1500                                   # bien por encima de la zona muerta
+    DER = int(VEL * FACTOR_CORRECCION)           # rueda derecha (más débil) con su factor
+
+    def paso(titulo, capa, izq_v, der_v, t=1.2):
+        print(titulo)
+        print("   aplicado:", motor.mover(capa, izq_v, der_v))
+        dormir(t, estado)
+        motor.mover(capa, 0, 0)
+        dormir(0.4, estado)
+
+    # --- Cada oruga por separado: así ves CUÁL no se mueve ---
+    paso("1) SOLO oruga IZQUIERDA avanza", "deliberativa", -VEL, 0)
+    if not estado.running:
+        return
+    paso("2) SOLO oruga DERECHA avanza", "deliberativa", 0, -DER)
+    if not estado.running:
+        return
+    paso("3) AMBAS avanzan", "deliberativa", -VEL, -DER)
     if not estado.running:
         return
 
-    print("2) HSV toma el control y retrocede 1s (mientras la deliberativa lo intenta)")
+    # --- Árbitro de prioridad ---
+    print("4) HSV retrocede y la deliberativa NO puede pisarlo")
     motor.tomar("hsv")
-    print("   HSV retrocede aplicado:", motor.mover("hsv", VEL_RETROCESO, VEL_RETROCESO))
-    print("   deliberativa avanzar (debe ser False):", motor.mover("deliberativa", -VEL_EXPLORAR, -VEL_EXPLORAR))
-    dormir(1.0, estado)
+    print("   HSV retrocede aplicado:", motor.mover("hsv", VEL, DER))
+    print("   deliberativa avanzar (debe ser False):", motor.mover("deliberativa", -VEL, -DER))
+    dormir(1.2, estado)
     motor.soltar("hsv")
-    detener(motor, "hsv")
-    dormir(0.5, estado)
+    motor.mover("hsv", 0, 0)
+    dormir(0.4, estado)
     if not estado.running:
         return
 
-    print("3) IR toma el control (mayor prioridad) sobre HSV")
+    print("5) IR retrocede (mayor prioridad) y HSV NO puede pisarlo")
     motor.tomar("hsv")
     motor.tomar("ir")
-    print("   IR retrocede aplicado:", motor.mover("ir", VEL_RETROCESO, VEL_RETROCESO))
-    print("   HSV avanzar (debe ser False):", motor.mover("hsv", -VEL_EXPLORAR, -VEL_EXPLORAR))
+    print("   IR retrocede aplicado:", motor.mover("ir", VEL, DER))
+    print("   HSV avanzar (debe ser False):", motor.mover("hsv", -VEL, -DER))
     print("   dueño actual:", motor.dueno())
-    dormir(1.0, estado)
+    dormir(1.2, estado)
     motor.soltar("ir")
     motor.soltar("hsv")
     motor.parar_forzado()
@@ -731,8 +746,11 @@ def modo_test_ir(estado, motor, infrared):
     motor.parar_forzado()
 
 
-def modo_test_hsv(estado, motor, camera):
-    """Detección de verde HSV en bucle; retrocede si hay verde peligroso."""
+def modo_test_hsv(estado, motor, camera, tcp_server=None):
+    """Detección de verde HSV en bucle; retrocede si hay verde peligroso.
+
+    Con --stream envía el vídeo con el contador de verde y la línea del ROI.
+    """
     print("\n=== TEST HSV (Capa 1) ===")
     print(f"Umbral actual: {HSV_UMBRAL_PIXELES} px verdes en el tercio inferior. Ctrl+C para salir.\n")
     while estado.running:
@@ -749,6 +767,16 @@ def modo_test_hsv(estado, motor, camera):
         else:
             motor.soltar("hsv")
             detener(motor, "hsv")
+
+        if tcp_server is not None:
+            anotado = frame.copy()
+            h, w = anotado.shape[:2]
+            y_roi = int(h * HSV_ROI_DESDE)
+            cv2.line(anotado, (0, y_roi), (w, y_roi), COLOR_LINEA, 1)  # borde del ROI
+            txt = f"verde:{n} {'PELIGRO' if peligro else 'ok'}"
+            cv2.putText(anotado, txt, (5, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, COLOR_ESTADO, 1)
+            enviar_frame(tcp_server, anotado)
+
         print(f"\rpíxeles verdes: {n:6d} | {'PELIGRO retrocede' if peligro else 'vía libre        '}", end="")
     motor.parar_forzado()
 
@@ -836,7 +864,12 @@ def main():
 
     try:
         # --- Streaming opcional (import perezoso) ---
-        if args.stream:
+        # Solo tiene sentido en modos con cámara (normal, test-hsv, test-percepcion).
+        # En --test-motor / --test-ir no hay vídeo: ignoramos --stream sin bloquear.
+        streaming = args.stream and not (args.test_motor or args.test_ir)
+        if args.stream and not streaming:
+            print("(--stream ignorado: este modo no tiene cámara/vídeo)")
+        if streaming:
             from server import TankServer
             tcp_server = TankServer()
             tcp_server.startTcpServer()
@@ -862,7 +895,7 @@ def main():
             camera = Camera(stream_size=(320, 240), hflip=True, vflip=True)
             camera.start_stream()
             time.sleep(1)
-            modo_test_hsv(estado, motor, camera)
+            modo_test_hsv(estado, motor, camera, tcp_server)
             return
 
         if args.test_percepcion:
