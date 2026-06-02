@@ -81,12 +81,12 @@ DIST_OBSTACULO_LEJOS = 35.0  # Distancia (cm) para empezar a esquivar suavemente
 # Bola (detección YOLO)
 AREA_RECOGER = 0.150      # Área relativa de la bola al alcance de la pinza (CALIBRAR con --test-percepcion)
 BOLA_CENTRADA = 0.12     # |error| por debajo → centrada (avanza recto / puede recoger)
-BOLA_GIRO_PIVOTE = 0.15  # |error| por encima → pivota en el sitio para centrar rápido
-VEL_GIRO_BOLA = 800     # Velocidad de pivote al centrar la bola (subir si la oruga débil no pivota)
+VEL_GIRO_BOLA = 1000     # Velocidad de pivote al centrar la bola (≥VEL_GIRO o no rota; subir si calla)
 RATIO_APROX_FINA = 0.7   # area/AREA_RECOGER por encima → aproximación a PULSOS (poco a poco)
 PULSO_AVANCE = 0.10      # s de avance en cada pulso de la aproximación fina (bajar si se pasa)
-PULSO_GIRO = 0.08        # s de pivote en cada pulso de centrado fino (bajar si se pasa de vuelta)
+PULSO_GIRO = 0.14        # s de pivote en cada pulso de centrado cercano (bajar si se pasa de vuelta)
 PULSO_PAUSA = 0.20       # s de pausa entre pulsos para que YOLO reevalúe
+TIMEOUT_ACERCAR = 7      # s máx en ACERCAR sin recoger → retrocede y re-busca (anti-atasco)
 
 # Línea verde (HSV, Capa 1) — del PRACTICA_2_solo_vision.py
 HSV_VERDE_BAJO = (40, 50, 50)
@@ -481,6 +481,7 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
     tiempo_ultima_bola = 0          # Última vez que YOLO vio bola (grace period sonar)
     dir_esquiva_obstaculo = None    # "izq"/"der", se fija al detectar obstáculo
     en_seguridad = False            # Para imprimir el cambio a SEGURIDAD una sola vez
+    tiempo_inicio_acercar = 0       # Cuándo entró en ACERCAR (para el timeout anti-atasco)
 
     t0 = time.time()
 
@@ -640,52 +641,57 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
                 tiempo_sin_bola = time.time()
                 continue
 
-            # --- Acercarse: lejos continuo; cerca a PULSOS (gira o avanza) ---
+            # --- Acercarse: CENTRAR (pivote fiable) y avanzar, con timeout anti-atasco ---
+            if estado_fsm != "ACERCAR":
+                tiempo_inicio_acercar = time.time()
             estado_fsm = "ACERCAR"
             ratio = bola_area / AREA_RECOGER   # 0 = lejos, 1 = a distancia de pinza
 
-            if ratio > RATIO_APROX_FINA:
-                # CERCA → todo a PULSOS discretos, parando a reevaluar (YOLO ~5 FPS).
-                # Centrado y avance SEPARADOS para no quedarse pillado: si está
-                # descentrada pivota un pulso (con autoridad real), si no avanza un pasito.
-                if not centrada:
-                    if error > 0:
-                        girar_derecha(motor, "deliberativa", VEL_GIRO_BOLA)
-                    else:
-                        girar_izquierda(motor, "deliberativa", VEL_GIRO_BOLA)
-                    dormir(PULSO_GIRO, estado)
-                    detener(motor, "deliberativa")
-                    dormir(PULSO_PAUSA, estado)
-                    modo = "P-GIRO"
+            # Anti-atasco: si lleva demasiado en ACERCAR sin recoger, retrocede y re-busca
+            if time.time() - tiempo_inicio_acercar > TIMEOUT_ACERCAR:
+                print()
+                traza("ACERCAR demasiado tiempo (atascado) → retrocede y re-busca")
+                retroceder(motor, "deliberativa", estado, 0.4)
+                if error > 0:
+                    girar_izquierda(motor, "deliberativa", VEL_GIRO)
                 else:
-                    avanzar(motor, "deliberativa", VEL_FRENADO)
-                    dormir(PULSO_AVANCE, estado)
-                    detener(motor, "deliberativa")
-                    dormir(PULSO_PAUSA, estado)
-                    modo = "P-AVANCE"
+                    girar_derecha(motor, "deliberativa", VEL_GIRO)
+                dormir(0.5, estado)
+                detener(motor, "deliberativa")
+                estado_fsm = "BUSCAR"
+                tiempo_sin_bola = time.time()
+                continue
 
-            elif abs_err > BOLA_GIRO_PIVOTE:
-                # LEJOS y descentrada → pivota EN EL SITIO para centrar rápido.
+            cerca = ratio > RATIO_APROX_FINA
+
+            if not centrada:
+                # CENTRAR pivotando a velocidad FIABLE (VEL_GIRO_BOLA ≥ VEL_GIRO, si no
+                # no rota). Lejos: continuo (cubre errores grandes rápido). Cerca: a
+                # pulsos cortos para no pasarse de vuelta.
                 if error > 0:
                     girar_derecha(motor, "deliberativa", VEL_GIRO_BOLA)
                 else:
                     girar_izquierda(motor, "deliberativa", VEL_GIRO_BOLA)
-                modo = "PIVOTA"
+                if cerca:
+                    dormir(PULSO_GIRO, estado)
+                    detener(motor, "deliberativa")
+                    dormir(PULSO_PAUSA, estado)
+                    modo = "GIRA-cerca"
+                else:
+                    modo = "GIRA-lejos"
+
+            elif cerca:
+                # Centrada y cerca → avanzar a PASITOS para no subirse a la bola
+                avanzar(motor, "deliberativa", VEL_FRENADO)
+                dormir(PULSO_AVANCE, estado)
+                detener(motor, "deliberativa")
+                dormir(PULSO_PAUSA, estado)
+                modo = "P-AVANCE"
 
             else:
-                # LEJOS y centrada-ish → avanzar continuo (recto o arco suave)
-                vel = VEL_ACERCAR
-                if centrada:
-                    avanzar(motor, "deliberativa", vel)
-                    modo = "RECTO"
-                else:
-                    # Arco suave, pero rueda interior con un mínimo (no se para)
-                    vel_lenta = int(vel * 0.45)
-                    if error > 0:
-                        motor.mover("deliberativa", -vel, -int(vel_lenta * FACTOR_CORRECCION))
-                    else:
-                        motor.mover("deliberativa", -vel_lenta, -int(vel * FACTOR_CORRECCION))
-                    modo = "ARCO"
+                # Centrada y lejos → avanzar continuo
+                avanzar(motor, "deliberativa", VEL_ACERCAR)
+                modo = "RECTO"
 
             traza(f"ACERCAR[{modo}] cx={bola_cx:.2f} err={error:+.2f} "
                   f"area={bola_area:.3f} ratio={ratio:.2f} dist={distancia:.0f}cm")
