@@ -85,6 +85,7 @@ BOLA_GIRO_PIVOTE = 0.15  # |error| por encima → pivota en el sitio para centra
 VEL_GIRO_BOLA = 800     # Velocidad de pivote al centrar la bola (subir si la oruga débil no pivota)
 RATIO_APROX_FINA = 0.7   # area/AREA_RECOGER por encima → aproximación a PULSOS (poco a poco)
 PULSO_AVANCE = 0.10      # s de avance en cada pulso de la aproximación fina (bajar si se pasa)
+PULSO_GIRO = 0.08        # s de pivote en cada pulso de centrado fino (bajar si se pasa de vuelta)
 PULSO_PAUSA = 0.20       # s de pausa entre pulsos para que YOLO reevalúe
 
 # Línea verde (HSV, Capa 1) — del PRACTICA_2_solo_vision.py
@@ -472,13 +473,23 @@ def hilo_hsv(estado, motor, camera):
 # CAPA 2 — DELIBERATIVA (hilo principal): YOLO + sonar, máquina de estados
 # =====================================================================
 
-def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_bolas):
+def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_bolas,
+                       log_activo=False):
     bolas_recogidas = 0
     estado_fsm = "BUSCAR"
     tiempo_sin_bola = time.time()
     tiempo_ultima_bola = 0          # Última vez que YOLO vio bola (grace period sonar)
     dir_esquiva_obstaculo = None    # "izq"/"der", se fija al detectar obstáculo
     en_seguridad = False            # Para imprimir el cambio a SEGURIDAD una sola vez
+
+    t0 = time.time()
+
+    def traza(msg):
+        """Con --log imprime una línea con timestamp (log scrollable); si no, compacto en una línea."""
+        if log_activo:
+            print(f"[{time.time() - t0:6.1f}s] {msg}")
+        else:
+            print("\r" + msg + "        ", end="")
 
     while estado.running:
         if total_bolas > 0 and bolas_recogidas >= total_bolas:
@@ -578,8 +589,7 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
                     girar_suave_izquierda(motor, "deliberativa", VEL_ACERCAR)
                 else:
                     girar_suave_derecha(motor, "deliberativa", VEL_ACERCAR)
-                print(f"\r⚠ ESQUIVANDO: sonar={distancia:.1f}cm → "
-                      f"curvando {dir_esquiva_obstaculo}    ", end="")
+                traza(f"ESQUIVANDO sonar={distancia:.1f}cm → curvando {dir_esquiva_obstaculo}")
                 continue
         else:
             dir_esquiva_obstaculo = None
@@ -598,7 +608,7 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
             # --- ¿Demasiado cerca? La pinza no llega si está pegada (área enorme) ---
             if bola_area > AREA_RECOGER * 2.5:
                 estado_fsm = "RETROCEDER"
-                print(f"\r← MUY CERCA: area={bola_area:.3f} → retrocediendo        ", end="")
+                traza(f"MUY CERCA area={bola_area:.3f} → retrocede")
                 retroceder(motor, "deliberativa", estado, 0.2)
                 continue
 
@@ -630,36 +640,40 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
                 tiempo_sin_bola = time.time()
                 continue
 
-            # --- Acercarse: centrar (pivote), aproximar continuo, y al final a PULSOS ---
+            # --- Acercarse: lejos continuo; cerca a PULSOS (gira o avanza) ---
             estado_fsm = "ACERCAR"
             ratio = bola_area / AREA_RECOGER   # 0 = lejos, 1 = a distancia de pinza
 
-            if abs_err > BOLA_GIRO_PIVOTE:
-                # Muy descentrada → pivota EN EL SITIO para centrar rápido.
-                # Contrarrotar no depende de la velocidad de avance: no se arrastra.
+            if ratio > RATIO_APROX_FINA:
+                # CERCA → todo a PULSOS discretos, parando a reevaluar (YOLO ~5 FPS).
+                # Centrado y avance SEPARADOS para no quedarse pillado: si está
+                # descentrada pivota un pulso (con autoridad real), si no avanza un pasito.
+                if not centrada:
+                    if error > 0:
+                        girar_derecha(motor, "deliberativa", VEL_GIRO_BOLA)
+                    else:
+                        girar_izquierda(motor, "deliberativa", VEL_GIRO_BOLA)
+                    dormir(PULSO_GIRO, estado)
+                    detener(motor, "deliberativa")
+                    dormir(PULSO_PAUSA, estado)
+                    modo = "P-GIRO"
+                else:
+                    avanzar(motor, "deliberativa", VEL_FRENADO)
+                    dormir(PULSO_AVANCE, estado)
+                    detener(motor, "deliberativa")
+                    dormir(PULSO_PAUSA, estado)
+                    modo = "P-AVANCE"
+
+            elif abs_err > BOLA_GIRO_PIVOTE:
+                # LEJOS y descentrada → pivota EN EL SITIO para centrar rápido.
                 if error > 0:
                     girar_derecha(motor, "deliberativa", VEL_GIRO_BOLA)
                 else:
                     girar_izquierda(motor, "deliberativa", VEL_GIRO_BOLA)
                 modo = "PIVOTA"
 
-            elif ratio > RATIO_APROX_FINA:
-                # CERCA → aproximación a PULSOS: avanza un pasito, para y reevalúa.
-                # Evita pasarse de largo entre frames (YOLO ~5 FPS) y subirse a la bola.
-                izq = -VEL_FRENADO
-                der = -int(VEL_FRENADO * FACTOR_CORRECCION)
-                if error > BOLA_CENTRADA:        # corrige un poco hacia la derecha
-                    der = -int(VEL_FRENADO * 0.4 * FACTOR_CORRECCION)
-                elif error < -BOLA_CENTRADA:     # corrige un poco hacia la izquierda
-                    izq = -int(VEL_FRENADO * 0.4)
-                motor.mover("deliberativa", izq, der)
-                dormir(PULSO_AVANCE, estado)
-                detener(motor, "deliberativa")
-                dormir(PULSO_PAUSA, estado)
-                modo = "PULSO"
-
             else:
-                # LEJOS → avanzar continuo (recto o arco suave hacia la bola)
+                # LEJOS y centrada-ish → avanzar continuo (recto o arco suave)
                 vel = VEL_ACERCAR
                 if centrada:
                     avanzar(motor, "deliberativa", vel)
@@ -673,8 +687,8 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
                         motor.mover("deliberativa", -vel_lenta, -int(vel * FACTOR_CORRECCION))
                     modo = "ARCO"
 
-            print(f"\r→ ACERCAR[{modo}]: cx={bola_cx:.2f} err={error:+.2f} "
-                  f"area={bola_area:.3f} ratio={ratio:.2f}        ", end="")
+            traza(f"ACERCAR[{modo}] cx={bola_cx:.2f} err={error:+.2f} "
+                  f"area={bola_area:.3f} ratio={ratio:.2f} dist={distancia:.0f}cm")
             continue
 
         # ==========================================================
@@ -694,7 +708,7 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
             tiempo_sin_bola = time.time()
         else:
             avanzar(motor, "deliberativa", VEL_EXPLORAR)
-            print(f"\r○ BUSCAR: {elapsed:.0f}s sin bola | dist={distancia:.0f}cm    ", end="")
+            traza(f"BUSCAR {elapsed:.0f}s sin bola | dist={distancia:.0f}cm")
 
     return bolas_recogidas
 
@@ -866,6 +880,8 @@ def main():
                         help="Probar la detección de verde HSV (Capa 1)")
     parser.add_argument("--test-percepcion", dest="test_percepcion", action="store_true",
                         help="Probar YOLO + decisiones sin mover (tuneo)")
+    parser.add_argument("--log", action="store_true",
+                        help="Imprimir un log por línea (con timestamp) de cada decisión")
     args = parser.parse_args()
 
     estado = Estado()
@@ -973,7 +989,8 @@ def main():
             time.sleep(0.05)
 
         # Capa 2 en el hilo principal
-        bolas = capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, args.bolas)
+        bolas = capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server,
+                                   args.bolas, log_activo=args.log)
         print(f"\nBolas recogidas: {bolas}")
 
     except KeyboardInterrupt:
