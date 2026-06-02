@@ -82,7 +82,7 @@ DIST_OBSTACULO_LEJOS = 35.0  # Distancia (cm) para empezar a esquivar suavemente
 AREA_RECOGER = 0.150      # Área relativa de la bola al alcance de la pinza (CALIBRAR con --test-percepcion)
 BOLA_CENTRADA = 0.12     # |error| por debajo → centrada (avanza recto / puede recoger)
 VEL_GIRO_BOLA = 1200     # Duty del "tap" de pivote: ALTO para romper la fricción y arrancar (subir si no rota)
-RATIO_APROX_FINA = 0.8   # area/AREA_RECOGER por encima → aproximación a PULSOS (poco a poco)
+RATIO_APROX_FINA = 0.6   # area/AREA_RECOGER por encima → aproximación a PULSOS (poco a poco)
 PULSO_AVANCE = 0.10      # s de avance en cada pulso de la aproximación fina (bajar si se pasa)
 PULSO_GIRO = 0.10        # s del tap de pivote MÍNIMO (error pequeño). Subir si no gira nada
 PULSO_GIRO_MAX = 0.30    # s del tap de pivote MÁXIMO (error grande). Bajar si se pasa "a lo loco"
@@ -99,7 +99,7 @@ HSV_ROI_DESDE = 2.0 / 3.0    # ROI = tercio inferior del frame
 #   más bajo (p.ej. 0.6) → tolera la línea desde más lejos (más agresivo)
 #   más alto (p.ej. 1.0) → solo la ignora casi pegado (más prudente)
 # La Capa 0 (IR) NUNCA se anula: sigue siendo el backstop anti-caída.
-RATIO_SUPRIMIR_LINEA = 0.8
+RATIO_SUPRIMIR_LINEA = 0.9
 
 # Tiempos
 TIMEOUT_BUSQUEDA = 10    # Segundos sin ver bola antes de girar para explorar
@@ -638,7 +638,7 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
             centrada = abs_err < BOLA_CENTRADA
 
             # --- ¿Demasiado cerca? La pinza no llega si está pegada (área enorme) ---
-            if bola_area > AREA_RECOGER * 2.5:
+            if bola_area > AREA_RECOGER * 1.1:
                 estado_fsm = "RETROCEDER"
                 traza(f"MUY CERCA area={bola_area:.3f} → retrocede")
                 retroceder(motor, "deliberativa", estado, 0.2)
