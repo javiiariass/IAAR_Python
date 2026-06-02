@@ -65,16 +65,16 @@ from camera import Camera
 # Nota: valores NEGATIVOS = avanzar (motores invertidos)
 VEL_EXPLORAR = 850       # Velocidad al buscar bola (no muy alta para que la cámara no vibre)
 VEL_ACERCAR = 700        # Velocidad al dirigirse hacia una bola vista
-VEL_FRENADO = 600        # Velocidad de aproximación final (sonar < 15cm)
-VEL_GIRO = 1200          # Velocidad de giro sobre sí mismo
+VEL_FRENADO = 400        # Velocidad de aproximación final (sonar < 15cm)
+VEL_GIRO = 800          # Velocidad de giro sobre sí mismo
 VEL_RETROCESO = 900      # Velocidad de marcha atrás (reflejos de seguridad y maniobras)
 
 # Factor de corrección del motor derecho (el derecho gira más lento)
 FACTOR_CORRECCION = 1.2
 
 # Sonar
-DIST_RECOGER = 10.0      # Distancia (cm) a la que la bola está al alcance de la pinza
-DIST_FRENAR = 15.0       # Distancia (cm) a la que empezar a reducir velocidad
+DIST_RECOGER = 6.0      # Distancia (cm) a la que la bola está al alcance de la pinza
+DIST_FRENAR = 20.0       # Distancia (cm) a la que empezar a reducir velocidad
 DIST_OBSTACULO = 20.0    # Distancia (cm) para parada de emergencia por obstáculo
 DIST_OBSTACULO_LEJOS = 35.0  # Distancia (cm) para empezar a esquivar suavemente
 
@@ -83,6 +83,9 @@ AREA_RECOGER = 0.150      # Área relativa de la bola al alcance de la pinza (CA
 BOLA_CENTRADA = 0.12     # |error| por debajo → centrada (avanza recto / puede recoger)
 BOLA_GIRO_PIVOTE = 0.20  # |error| por encima → pivota en el sitio para centrar rápido
 VEL_GIRO_BOLA = 1000     # Velocidad de pivote al centrar la bola (subir si la oruga débil no pivota)
+RATIO_APROX_FINA = 0.7   # area/AREA_RECOGER por encima → aproximación a PULSOS (poco a poco)
+PULSO_AVANCE = 0.12      # s de avance en cada pulso de la aproximación fina (bajar si se pasa)
+PULSO_PAUSA = 0.10       # s de pausa entre pulsos para que YOLO reevalúe
 
 # Línea verde (HSV, Capa 1) — del PRACTICA_2_solo_vision.py
 HSV_VERDE_BAJO = (40, 50, 50)
@@ -627,8 +630,10 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
                 tiempo_sin_bola = time.time()
                 continue
 
-            # --- Acercarse: PRIMERO centrar (pivotando), LUEGO avanzar ---
+            # --- Acercarse: centrar (pivote), aproximar continuo, y al final a PULSOS ---
             estado_fsm = "ACERCAR"
+            ratio = bola_area / AREA_RECOGER   # 0 = lejos, 1 = a distancia de pinza
+
             if abs_err > BOLA_GIRO_PIVOTE:
                 # Muy descentrada → pivota EN EL SITIO para centrar rápido.
                 # Contrarrotar no depende de la velocidad de avance: no se arrastra.
@@ -637,9 +642,25 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
                 else:
                     girar_izquierda(motor, "deliberativa", VEL_GIRO_BOLA)
                 modo = "PIVOTA"
+
+            elif ratio > RATIO_APROX_FINA:
+                # CERCA → aproximación a PULSOS: avanza un pasito, para y reevalúa.
+                # Evita pasarse de largo entre frames (YOLO ~5 FPS) y subirse a la bola.
+                izq = -VEL_FRENADO
+                der = -int(VEL_FRENADO * FACTOR_CORRECCION)
+                if error > BOLA_CENTRADA:        # corrige un poco hacia la derecha
+                    der = -int(VEL_FRENADO * 0.4 * FACTOR_CORRECCION)
+                elif error < -BOLA_CENTRADA:     # corrige un poco hacia la izquierda
+                    izq = -int(VEL_FRENADO * 0.4)
+                motor.mover("deliberativa", izq, der)
+                dormir(PULSO_AVANCE, estado)
+                detener(motor, "deliberativa")
+                dormir(PULSO_PAUSA, estado)
+                modo = "PULSO"
+
             else:
-                # Bastante centrada → avanzar (más lento cuanto más grande/cerca)
-                vel = VEL_FRENADO if bola_area > AREA_RECOGER * 0.6 else VEL_ACERCAR
+                # LEJOS → avanzar continuo (recto o arco suave hacia la bola)
+                vel = VEL_ACERCAR
                 if centrada:
                     avanzar(motor, "deliberativa", vel)
                     modo = "RECTO"
@@ -653,7 +674,7 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
                     modo = "ARCO"
 
             print(f"\r→ ACERCAR[{modo}]: cx={bola_cx:.2f} err={error:+.2f} "
-                  f"area={bola_area:.3f} dist={distancia:.0f}cm        ", end="")
+                  f"area={bola_area:.3f} ratio={ratio:.2f}        ", end="")
             continue
 
         # ==========================================================
