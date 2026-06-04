@@ -19,7 +19,8 @@ set -u
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DIR" || exit 1
 
-DURACION=600          # segundos que corre el MODELO (600 = 10 min)
+# DURACION=600          # segundos que corre el MODELO (600 = 10 min)
+DURACION=30          # segundos que corre el MODELO (600 = 10 min)
 ESPERA_INICIAL=8      # s tras encender para colocar el robot (sube/baja a gusto)
 PY=python3            # intérprete con cv2/ncnn instalados (cambia a 'python' si hiciera falta)
 LOG="$DIR/ultimo_arranque.log"
@@ -39,4 +40,4 @@ trap 'echo "Interrupción detectada (Ctrl+C). Abortando el script..."; exit 130'
 } >> "$LOG" 2>&1
 
 # Apagar la Pi pase lo que pase.
-/sbin/poweroff
+# /sbin/poweroff

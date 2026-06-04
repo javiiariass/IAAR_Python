@@ -100,7 +100,7 @@ HSV_ROI_DESDE = 2.0 / 3.0    # ROI = tercio inferior del frame
 #   más bajo (p.ej. 0.6) → tolera la línea desde más lejos (más agresivo)
 #   más alto (p.ej. 1.0) → solo la ignora casi pegado (más prudente)
 # La Capa 0 (IR) NUNCA se anula: sigue siendo el backstop anti-caída.
-RATIO_SUPRIMIR_LINEA = 0.2
+RATIO_SUPRIMIR_LINEA = 0.3
 
 # Tiempos
 TIMEOUT_BUSQUEDA = 20    # Segundos sin ver bola antes de girar para explorar
