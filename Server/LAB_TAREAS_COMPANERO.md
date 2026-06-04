@@ -4,6 +4,8 @@
 
 ## Cambios realizados después de la última sesión de laboratorio
 
+En la inferencia `yolo_inferencia_ncnn.py` le he quitado 1 hilo (de 4 a 3) para que ese hilo lo use el script principal y no se sature tanto. También he subido la confianza necesaria de la bola (de 0.45 a 0.5) -> se podría incluso subir un poco más si sigue detectando bolas donde no hay
+
 Cambios hechos en `PRACTICA_3.py` desde la última sesión (qué y por qué):
 
 | # | Cambio | Antes → Después | Motivo |

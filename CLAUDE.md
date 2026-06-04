@@ -169,7 +169,7 @@ PINZA_ABIERTA = 90, PINZA_CERRADA = 135, BRAZO_ARRIBA = 140, BRAZO_ABAJO = 90
 - **Recogida por área** de YOLO; sonar solo para el obstáculo.
 - **Centrado por taps** de pivote + aproximación a pulsos; **timeout anti-atasco** en ACERCAR.
 - Supresión de línea por bola en borde (hoy **booleana**, pendiente pasar a umbral dinámico).
-- Vectorización de `detect()` con numpy; `num_threads=4` en NCNN. Umbrales de confianza por clase (conf_bola, conf_linea).
+- Vectorización de `detect()` con numpy; `num_threads=3` en NCNN (bajado de 4 para dejar un core al PWM por software). Umbrales de confianza por clase (`conf_bola=0.5`, `conf_linea=0.25`).
 
 ## Estado de pruebas y fallos actuales (en calibración)
 
@@ -179,10 +179,10 @@ PINZA_ABIERTA = 90, PINZA_CERRADA = 135, BRAZO_ARRIBA = 140, BRAZO_ABAJO = 90
    mueve; al rato arranca). Origen probable: **fricción estática (stiction)** — los duties de
    arranque desde parado son bajos (avance 700/400, taps a 1200) y a veces no rompen la
    fricción. Se suma posible **PWM por software inestable bajo carga**: gpiozero genera el PWM
-   por software y con NCNN a 4 hilos ocupando los 4 cores el waveform tiembla → baja el par
-   efectivo. Mitigado en parte alargando el tap mínimo de giro (`PULSO_GIRO` 0.10→0.30).
-   Pendiente: medir el duty de arranque real (Tarea 3 del lab) y decidir subir duty / bajar
-   hilos (4→3) / pigpio.
+   por software y con NCNN ocupando los cores el waveform tiembla → baja el par efectivo.
+   Mitigado en parte alargando el tap mínimo de giro (`PULSO_GIRO` 0.10→0.30) y **bajando NCNN
+   de 4 a 3 hilos** (deja un core al PWM). Pendiente: medir el duty de arranque real (Tarea 3
+   del lab), confirmar si bajar hilos ayudó, y decidir subir duty / pigpio.
 2. **Se aleja de la bola cuando podría cogerla.** Origen: la ventana de recogida era muy
    estrecha (retrocedía con `area > AREA_RECOGER*1.1` antes de poder coger). Mitigado subiendo
    el umbral de retroceso a 1.2× y ensanchando la recogida (bypass de centrado 1.5×→1.2×).
@@ -218,7 +218,7 @@ PINZA_ABIERTA = 90, PINZA_CERRADA = 135, BRAZO_ARRIBA = 140, BRAZO_ABAJO = 90
 ### PENDIENTE
 
 1. **Umbral de verde dinámico (rediseño de la supresión de línea).** Hoy `suprimir_linea` es un bool que pone `peligro=False` (apaga el HSV entero). Cambiar a **dos umbrales**: normal (~3000 px) y con-bola (~10-12k px, a medir en lab). El robot frena si verde > umbral, según haya o no bola en aproximación. **Sin** "techo de emergencia" por píxeles: el verde CAE a 0 cuando la línea se sale de la cámara (cámara alta), así que no se dispara — el backstop real es el **IR**. Bloqueado hasta medir el umbral con-bola (Tarea 2 del lab). Resuelve el fallo de la bola en esquina.
-2. **Decisión motor / fricción (stiction).** Tras medir el duty de arranque (Tarea 3), decidir entre: subir duties (fuerza, p.ej. `VEL_GIRO_BOLA`), quedarnos con los taps más largos ya puestos (tiempo), y/o **bajar NCNN de 4 a 3 hilos** para no ahogar el PWM por software. pigpio (PWM por DMA, inmune a la carga de CPU) solo si sigue temblando.
+2. **Decisión motor / fricción (stiction).** Ya hecho: tap mínimo de giro más largo y **NCNN bajado de 4 a 3 hilos** (un core libre para el PWM). Tras medir el duty de arranque (Tarea 3), confirmar si bajar hilos ayudó y decidir subir duties (fuerza, p.ej. `VEL_GIRO_BOLA`) o no. pigpio (PWM por DMA, inmune a la carga de CPU) solo si sigue temblando.
 3. **Verificación post-recogida.** Guardar `bola_area`/`bola_cx` antes de bajar la pinza; tras subir el brazo, comparar. Si el área bajó mucho / ya no se ve esa bola → éxito; si sigue grande en la misma posición → reintentar. Comparar ÁREA y POSICIÓN, no solo presencia (puede haber otra bola de fondo). (Durante la recogida la pinza tapa la cámara → ignorar percepción salvo IR.)
 4. **Memoria de bola tras evasión.** Si estaba en ACERCAR y tiene que evadir, guardar el último `bola_cx` y, tras evadir, girar hacia ahí en vez de re-buscar a ciegas. El "escape de línea" actual puede abandonar una bola buena cerca del borde.
 

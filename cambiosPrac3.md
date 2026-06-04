@@ -77,3 +77,16 @@ Cambios sobre `PRACTICA_3.py` tras revisar los fallos del último lab:
 - Variación del `cx` de la bola (validar `BOLA_CENTRADA = 0.15`).
 - Umbral de verde CON bola cerca (~10-12k px; el normal de 3000 se queda).
 - Duty de arranque del motor (avance y giro en sitio).
+
+---
+
+## Ajustes en `yolo_inferencia_ncnn.py` (confianza de bola + hilos)
+
+| Cambio | Antes → Después | Motivo |
+|---|---|---|
+| `conf_bola` (umbral de confianza de bola) | 0.45 → **0.5** | Exigir más confianza para dar una bola por válida → menos falsos positivos / detecciones fantasma de bola. |
+| `num_threads` (NCNN) | 4 → **3** | Dejar un núcleo libre para el PWM por software (gpiozero) y los hilos de seguridad, para que el waveform no tiemble bajo carga (mitiga el motor "pillado"). Cuesta algo de FPS. |
+
+> Pendiente confirmar en lab si bajar a 3 hilos reduce el "pillado": comparar arranque del
+> motor en `--test-motor` (sin YOLO) vs marcha normal (con YOLO). Si solo se atasca con YOLO,
+> los hilos eran el problema; si se atasca igual sin YOLO, es stiction (duty).
