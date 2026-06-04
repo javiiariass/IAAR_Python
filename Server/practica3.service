@@ -1,0 +1,16 @@
+[Unit]
+Description=Practica 3 IAAR - corre el modelo 10 min al encender y apaga la Pi
+# Esperar a que el sistema (red, drivers) esté listo antes de arrancar.
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/home/practica/Freenove_Tank_Robot_Kit_for_Raspberry_Pi/Code/Server/run_practica3_10min.sh
+# Corre como root: GPIO/motores y poweroff necesitan privilegios.
+User=root
+Restart=no
+# El script dura ~10 min: que systemd NO lo mate antes.
+TimeoutStartSec=infinity
+
+[Install]
+WantedBy=multi-user.target
