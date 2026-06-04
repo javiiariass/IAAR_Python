@@ -80,12 +80,12 @@ DIST_OBSTACULO_LEJOS = 35.0  # Distancia (cm) para empezar a esquivar suavemente
 
 # Bola (detección YOLO)
 AREA_RECOGER = 0.150      # Área relativa de la bola al alcance de la pinza (CALIBRAR con --test-percepcion)
-BOLA_CENTRADA = 0.12     # |error| por debajo → centrada (avanza recto / puede recoger)
+BOLA_CENTRADA = 0.15     # |error| por debajo → centrada (avanza recto / puede recoger)
 VEL_GIRO_BOLA = 1200     # Duty del "tap" de pivote: ALTO para romper la fricción y arrancar (subir si no rota)
 RATIO_APROX_FINA = 0.6   # area/AREA_RECOGER por encima → aproximación a PULSOS (poco a poco)
 PULSO_AVANCE = 0.10      # s de avance en cada pulso de la aproximación fina (bajar si se pasa)
-PULSO_GIRO = 0.10        # s del tap de pivote MÍNIMO (error pequeño). Subir si no gira nada
-PULSO_GIRO_MAX = 0.30    # s del tap de pivote MÁXIMO (error grande). Bajar si se pasa "a lo loco"
+PULSO_GIRO = 0.30        # s del tap de pivote MÍNIMO (error pequeño). Subir si no gira nada
+PULSO_GIRO_MAX = 0.50    # s del tap de pivote MÁXIMO (error grande). Bajar si se pasa "a lo loco"
 PULSO_PAUSA = 0.20       # s de pausa entre pulsos para que YOLO reevalúe
 VEL_RETROCESO_FINO = 800 # Velocidad de retroceso LENTO al reposicionar bola muy cerca (no el de seguridad)
 TIMEOUT_ACERCAR = 7      # s máx en ACERCAR sin recoger → retrocede y re-busca (anti-atasco)
@@ -646,7 +646,7 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
 
             # --- ¿Demasiado cerca? Retroceder DESPACIO y a PULSOS para reposicionar
             #     (no el retroceder() de seguridad, que da el tirón a VEL_RETROCESO=900) ---
-            if bola_area > AREA_RECOGER * 1.1:
+            if bola_area > AREA_RECOGER * 1.2:
                 estado_fsm = "RETROCEDER"
                 traza(f"MUY CERCA area={bola_area:.3f} → retrocede despacio")
                 motor.mover("deliberativa", VEL_RETROCESO_FINO,
@@ -661,7 +661,7 @@ def capa2_deliberativa(estado, motor, servo, sonar, detector, tcp_server, total_
             # mal en una bola pequeña). Recoge si está a tamaño Y centrada, O si ya
             # es claramente grande aunque el centrado no sea perfecto: cuando está
             # muy cerca el cx baila, y si esperásemos a centrar el robot no pararía.
-            if bola_area >= AREA_RECOGER and (centrada or bola_area >= AREA_RECOGER * 1.5):
+            if bola_area >= AREA_RECOGER and (centrada or bola_area >= AREA_RECOGER * 1.2):
                 estado_fsm = "RECOGER"
                 print(f"\n✓ RECOGER: area={bola_area:.3f} cx={bola_cx:.2f}")
 
@@ -792,9 +792,15 @@ def modo_test_motor(estado, motor):
     paso("3) AMBAS avanzan", "deliberativa", -VEL, -DER)
     if not estado.running:
         return
+    paso("4) ROTAR derecha", "deliberativa", -VEL, DER)
+    if not estado.running:
+        return
+    paso("5) ROTAR izquierda", "deliberativa", VEL, -DER)
+    if not estado.running:
+        return
 
     # --- Árbitro de prioridad ---
-    print("4) HSV retrocede y la deliberativa NO puede pisarlo")
+    print("6) HSV retrocede y la deliberativa NO puede pisarlo")
     motor.tomar("hsv")
     print("   HSV retrocede aplicado:", motor.mover("hsv", VEL, DER))
     print("   deliberativa avanzar (debe ser False):", motor.mover("deliberativa", -VEL, -DER))
@@ -805,7 +811,7 @@ def modo_test_motor(estado, motor):
     if not estado.running:
         return
 
-    print("5) IR retrocede (mayor prioridad) y HSV NO puede pisarlo")
+    print("7) IR retrocede (mayor prioridad) y HSV NO puede pisarlo")
     motor.tomar("hsv")
     motor.tomar("ir")
     print("   IR retrocede aplicado:", motor.mover("ir", VEL, DER))
