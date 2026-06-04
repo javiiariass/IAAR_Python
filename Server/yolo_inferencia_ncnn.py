@@ -35,7 +35,7 @@ except ImportError:
 
 class YOLODetectorNCNN:
     def __init__(self, model_dir="best_ncnn_model", conf_threshold=0.45,
-                 conf_bola=0.45, conf_linea=0.25,
+                 conf_bola=0.50, conf_linea=0.25,
                  iou_threshold=0.35, img_size=320):
         """
         Args:
@@ -58,7 +58,7 @@ class YOLODetectorNCNN:
 
         self.net = ncnn.Net()
         # Usar todos los cores disponibles en la RPi
-        self.net.opt.num_threads = 4
+        self.net.opt.num_threads = 3
         self.net.opt.use_vulkan_compute = False  # Sin GPU en la RPi
 
         self.net.load_param(param_path)
