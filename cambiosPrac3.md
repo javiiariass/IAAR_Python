@@ -41,3 +41,39 @@
 
 ## Idea de fondo que cambió respecto al plan
 El plan confiaba mucho en el SONAR para la distancia y en combinar sensores. En el lab vimos que el sonar es poco fiable para bolas, así que la distancia a la bola la lleva el ÁREA de YOLO, y el sonar quedó solo para el obstáculo (caja). Y casi toda la dificultad real resultó ser control de motores con fricción/stiction a ~5 FPS, que motivó los "taps" y la aproximación pulsada — algo que el plan no anticipaba.
+
+---
+
+## Ajustes post-lab (sesión de calibración) — centrado, recogida y test de motor
+
+> A partir de aquí, el registro de cambios se irá añadiendo en este archivo (lo más
+> reciente abajo). `CLAUDE.md` mantiene el estado/planning; aquí va el histórico de qué se
+> tocó y por qué.
+
+Cambios sobre `PRACTICA_3.py` tras revisar los fallos del último lab:
+
+| # | Cambio | Antes → Después | Motivo |
+|---|---|---|---|
+| 1 | `BOLA_CENTRADA` | 0.12 → **0.15** | De cerca el `cx` tiembla mucho; con el umbral antiguo se quedaba intentando centrar sin parar. Más margen → recoge / avanza recto antes. |
+| 2 | `PULSO_GIRO` (tap de giro mínimo) | 0.10 → **0.30 s** | Los taps cortos no rompían la fricción del motor ("zumba pero no gira"). Un mínimo más largo da tiempo a arrancar desde parado. |
+| 3 | `PULSO_GIRO_MAX` (tap de giro máximo) | 0.30 → **0.50 s** | Acompaña al mínimo más largo, para que el giro proporcional siga teniendo recorrido con error grande. |
+| 4 | Umbral RETROCEDER por bola muy cerca | `AREA_RECOGER*1.1` → **`*1.2`** | No echarse atrás tan pronto; tolerar que la bola esté algo más cerca de lo ideal antes de retroceder (preferimos intentar coger). |
+| 5 | Recogida sin centrado perfecto | bypass `AREA_RECOGER*1.5` → **`*1.2`** | Ensanchar la ventana de recogida: coger aunque no esté perfectamente centrada en cuanto es suficientemente grande (de cerca el `cx` es ruidoso). |
+| 6 | `modo_test_motor`: pasos nuevos | +**"4) ROTAR derecha"** y **"5) ROTAR izquierda"** (pivote); árbitro renumerado a 6) y 7) | Poder medir el arranque del giro en sitio (el que más sufre la fricción), no solo el avance recto. |
+
+**Fallos que motivaron estos cambios y su origen probable:**
+- *Le cuesta centrar / se queda pillado antes de avanzar o girar* (zumba como aplicando
+  fuerza pero no se mueve, al rato arranca) → origen probable: **fricción estática (stiction)**
+  porque el duty de arranque desde parado es bajo, sumado a posible **PWM por software
+  inestable bajo carga** (gpiozero + NCNN a 4 hilos ocupando los 4 cores). Mitigado en parte
+  con #2/#3; **pendiente** medir el duty de arranque real y decidir subir duty / bajar hilos / pigpio.
+- *Se aleja de la bola cuando podría cogerla* → la ventana de recogida era demasiado estrecha
+  (retrocedía antes de poder coger). Mitigado con #4 y #5. Nota: el área NO es monótona —
+  cerca BAJA (cámara alta, la bola se sale por abajo), por eso el punto de recogida es área≈0.150.
+- *Bola en esquina con dos bboxes de línea que no solapan la bola* → aún abierto; la idea es
+  el **umbral de verde dinámico** (ver pendientes en `CLAUDE.md`) en vez de la supresión por solape.
+
+**En calibración** (valores a medir en el robot real; guía en `Server/LAB_TAREAS_COMPANERO.md`):
+- Variación del `cx` de la bola (validar `BOLA_CENTRADA = 0.15`).
+- Umbral de verde CON bola cerca (~10-12k px; el normal de 3000 se queda).
+- Duty de arranque del motor (avance y giro en sitio).

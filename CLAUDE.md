@@ -4,6 +4,14 @@
 
 Práctica 3 de la asignatura IAAR (Inteligencia Artificial Aplicada a la Robótica). Un tanque Freenove con Raspberry Pi 4 que usa YOLOv8n para detectar bolas rojas (recogerlas) y líneas verdes (bordes de mesa, evitar caerse). YOLO26n se probó pero dio peores resultados con nuestro dataset pequeño. El robot opera sobre una mesa con líneas verdes pintadas en los bordes, debe recoger múltiples bolas rojas en ~1 minuto, esquivar una caja obstáculo y no caerse.
 
+> **Registro de cambios:** el log de cambios del proyecto se va añadiendo en
+> `cambiosPrac3.md` (raíz del repo, lo más reciente abajo). Este `CLAUDE.md` mantiene el
+> ESTADO y el PLANNING; `cambiosPrac3.md` mantiene el HISTÓRICO de qué se tocó y por qué.
+> **Para ponerte al día, lee primero `cambiosPrac3.md` y el código de `Server/PRACTICA_3.py`.**
+>
+> **Fase actual: CALIBRACIÓN de valores en el robot real** (la arquitectura ya está hecha).
+> Guía de medidas en curso: `Server/LAB_TAREAS_COMPANERO.md`.
+
 ## Hardware
 
 - **Raspberry Pi 4** (NO es la 5)
@@ -28,11 +36,12 @@ Práctica 3 de la asignatura IAAR (Inteligencia Artificial Aplicada a la Robóti
 
 ## Archivos del proyecto
 
-### Scripts principales (4 variantes, misma lógica):
-- `Server/PRACTICA_3_YOLO.py` — ONNX, sin streaming
-- `Server/PRACTICA_3_YOLO_STREAM.py` — ONNX, con streaming Freenove
-- `Server/PRACTICA_3_YOLO_NCNN.py` — NCNN, sin streaming
-- `Server/PRACTICA_3_YOLO_STREAM_NCNN.py` — NCNN, con streaming Freenove
+### Script principal (ACTUAL):
+- `Server/PRACTICA_3.py` — **script único** por capas (subsumption), solo NCNN, con flag `--stream`. **Es el que se usa.** Incluye modos de prueba: `--test-motor`, `--test-ir`, `--test-hsv`, `--test-percepcion`, y `--sin-motor` / `--log`.
+- `Server/LAB_TAREAS_COMPANERO.md` — guía de la sesión de calibración en curso (qué medir y cómo).
+
+### Scripts antiguos (LEGACY — anteriores a la unificación, ya no se usan):
+- `Server/PRACTICA_3_YOLO.py`, `_STREAM.py`, `_NCNN.py`, `_STREAM_NCNN.py` — las 4 variantes que se unificaron en `PRACTICA_3.py`. Se conservan solo por referencia.
 
 ### Módulos de inferencia:
 - `Server/yolo_inferencia.py` — ONNX con OpenCV DNN. detect() vectorizado con numpy. cv2.setNumThreads(4). Umbrales de confianza por clase (conf_bola, conf_linea).
@@ -119,147 +128,105 @@ line_info = detector.get_line_info(detecciones, frame_width, frame_height)
 8. Exportar a NCNN: `model.export(format="ncnn", imgsz=320)`
 9. Copiar `best.onnx` y `best_ncnn_model/` a `Server/` en la RPi
 
-## Estado actual de los 4 scripts principales
+## Estado actual — `PRACTICA_3.py` (script único por capas)
 
-Todos sincronizados con la misma lógica:
-- `tiempo_ultima_bola`: grace period de 1s para no confundir bola con obstáculo en sonar
-- Lógica combinada sonar+cámara para recogida (ambos deben confirmar, no OR)
-- Retroceder si bola demasiado cerca (area > AREA_RECOGER * 3)
-- Supresión de evasión de línea cuando hay bola cerca (posicion_y > 0.80)
-- Giro proporcional al error de centrado (factor_lenta varía con el error)
-- Frenar si cualquiera de los sensores indica cercanía
-- Versiones STREAM esperan conexión del cliente antes de arrancar
+Arquitectura de 3 capas YA implementada (ver PLANNING → YA HECHO). Resumen de la lógica
+deliberativa (Capa 2):
+- `tiempo_ultima_bola`: grace period de 1s para no confundir bola con obstáculo en el sonar.
+- Recogida por **ÁREA de YOLO** (el sonar quedó solo para el obstáculo/caja).
+- Centrado por **taps de pivote** (duty fijo `VEL_GIRO_BOLA`, duración proporcional al error) + **pausa** para que YOLO reevalúe.
+- Aproximación final a **pulsos** (P-AVANCE) para no subirse a la bola a ~5 FPS.
+- Retroceso fino/pulsado si la bola está demasiado cerca.
+- Supresión del frenado por verde (`suprimir_linea`) cuando hay bola en aproximación/borde.
+- `TIMEOUT_ACERCAR` anti-atasco. La Capa 0 (IR) siempre activa como backstop anti-caída.
 
-### Constantes actuales (en los 4 scripts):
+### Constantes actuales (en `PRACTICA_3.py`) — EN CALIBRACIÓN
 ```
-VEL_EXPLORAR = 900
-VEL_ACERCAR = 800
-VEL_FRENADO = 350
-VEL_GIRO = 1200
+# Velocidades (duty 0-4095; NEGATIVO = avanzar)
+VEL_EXPLORAR = 850, VEL_ACERCAR = 700, VEL_FRENADO = 400, VEL_GIRO = 1000, VEL_RETROCESO = 900
 FACTOR_CORRECCION = 1.2
-DIST_RECOGER = 7.0 cm
-DIST_FRENAR = 15.0 cm
-DIST_OBSTACULO = 15.0 cm
-DIST_OBSTACULO_LEJOS = 30.0 cm
-AREA_RECOGER = 0.05
-TIMEOUT_BUSQUEDA = 6 s
-PAUSA_TRAS_SOLTAR = 1.5 s
-PINZA_ABIERTA = 90, PINZA_CERRADA = 135
-BRAZO_ARRIBA = 140, BRAZO_ABAJO = 90
+# Sonar (solo obstáculo)
+DIST_RECOGER = 6.0, DIST_FRENAR = 20.0, DIST_OBSTACULO = 25.0, DIST_OBSTACULO_LEJOS = 35.0
+# Bola (YOLO)
+AREA_RECOGER = 0.150        # calibrado (~distancia de pinza)
+BOLA_CENTRADA = 0.15        # margen de centrado
+VEL_GIRO_BOLA = 1200        # duty del tap de pivote
+RATIO_APROX_FINA = 0.6, PULSO_AVANCE = 0.10
+PULSO_GIRO = 0.30, PULSO_GIRO_MAX = 0.50, PULSO_PAUSA = 0.20
+VEL_RETROCESO_FINO = 800, TIMEOUT_ACERCAR = 7
+# Línea (HSV): rango [40,50,50]-[85,255,255], ROI = tercio inferior
+HSV_UMBRAL_PIXELES = 3000, RATIO_SUPRIMIR_LINEA = 0.5
+# Tiempos / servo
+TIMEOUT_BUSQUEDA = 20, PAUSA_TRAS_SOLTAR = 2, IR_PERIODO = 0.02, IR_RETROCESO_EXTRA = 0.25
+PINZA_ABIERTA = 90, PINZA_CERRADA = 135, BRAZO_ARRIBA = 140, BRAZO_ABAJO = 90
 ```
 
 ## Ya implementado
 
-- Vectorización de detect() con numpy en ambos módulos (ONNX y NCNN) — eliminado el for-loop sobre 2100 candidatos
-- cv2.setNumThreads(4) en ONNX, num_threads=4 en NCNN
-- Umbrales de confianza por clase: conf_bola, conf_linea (constructor de YOLODetector y YOLODetectorNCNN)
-- Giro proporcional al error de centrado (factor_lenta = max(0.0, 0.65 - abs(error) * 1.5))
-- Lógica combinada sonar+cámara para recogida
-- Umbral de línea peligrosa: tercio inferior del frame (frame_height * 2/3)
-- Las 4 variantes de script sincronizadas
+- Arquitectura de **3 capas** (subsumption) + árbitro `MotorSeguro` por prioridad (IR > HSV > deliberativa).
+- **Script único** `PRACTICA_3.py` (NCNN), con modos de prueba y `--stream` / `--sin-motor` / `--log`.
+- **Ctrl+C rápido**: handler SIGINT + flag `running` + `dormir()` troceado + hilos daemon.
+- **Recogida por área** de YOLO; sonar solo para el obstáculo.
+- **Centrado por taps** de pivote + aproximación a pulsos; **timeout anti-atasco** en ACERCAR.
+- Supresión de línea por bola en borde (hoy **booleana**, pendiente pasar a umbral dinámico).
+- Vectorización de `detect()` con numpy; `num_threads=4` en NCNN. Umbrales de confianza por clase (conf_bola, conf_linea).
 
-## Problemas observados en lab
+## Estado de pruebas y fallos actuales (en calibración)
 
-1. **Robot no esquivaba línea verde** → Corregido cambiando umbral. Se revertió a 2/3 porque 1/2 era demasiado agresivo.
-2. **Robot evitaba bolas rojas** → Sonar confundía bola con obstáculo. Corregido con tiempo_ultima_bola (grace period 1s).
-3. **Giro suave demasiado lento** → Factor 0.3 insuficiente. Cambiado a 0.55 y luego a giro proporcional.
-4. **Robot no cogía bola** → Condición OR (sonar o cámara) causaba falsos positivos. Cambiado a AND con fallback.
-5. **Bola en esquina, robot evade línea** → Supresión de evasión cuando hay bola cerca.
-6. **Centrado de bola muy lento** → Umbral 0.10 muy estricto y giro fijo. Cambiado a 0.15 + giro proporcional.
-7. **YOLO no detecta línea en algún frame → robot casi se cae** → Motivó el plan de añadir capa reactiva HSV.
-8. **Ctrl+C tarda mucho** → Operaciones bloqueantes (sonar, sleeps en secuencias de evasión). Planificado handler SIGINT + flag.
-9. **~5 FPS con NCNN** → Vectorización ya aplicada. Pendiente medir mejora.
-10. **4 scripts duplicados** → Cada cambio hay que aplicarlo 4 veces. Planificado unificar.
+**Estamos probando/ajustando valores en el robot real.** Fallos abiertos y su origen probable:
 
-## PLANNING — Reestructuración pendiente
+1. **Se queda "pillado" antes de avanzar/girar** (zumba como aplicando fuerza pero no se
+   mueve; al rato arranca). Origen probable: **fricción estática (stiction)** — los duties de
+   arranque desde parado son bajos (avance 700/400, taps a 1200) y a veces no rompen la
+   fricción. Se suma posible **PWM por software inestable bajo carga**: gpiozero genera el PWM
+   por software y con NCNN a 4 hilos ocupando los 4 cores el waveform tiembla → baja el par
+   efectivo. Mitigado en parte alargando el tap mínimo de giro (`PULSO_GIRO` 0.10→0.30).
+   Pendiente: medir el duty de arranque real (Tarea 3 del lab) y decidir subir duty / bajar
+   hilos (4→3) / pigpio.
+2. **Se aleja de la bola cuando podría cogerla.** Origen: la ventana de recogida era muy
+   estrecha (retrocedía con `area > AREA_RECOGER*1.1` antes de poder coger). Mitigado subiendo
+   el umbral de retroceso a 1.2× y ensanchando la recogida (bypass de centrado 1.5×→1.2×).
+   Nota clave: **el área NO es monótona** — cerca BAJA porque la cámara está alta y la bola se
+   sale por abajo del campo; por eso el punto de recogida se fija en área≈0.150 (no en "bola debajo").
+3. **Bola en esquina con dos bboxes de línea que no solapan la bola.** YOLO marca esquina y el
+   robot evade/abandona la bola aunque el camino recto esté libre. Sin resolver del todo; la
+   idea es el **umbral de verde dinámico** (pendiente #1) en vez de la supresión por solape.
+4. **Centrado lento / errático.** Es consecuencia del fallo #1 (stiction): los taps no arrancan
+   fiable. Se atacará junto con la decisión de motor, NO tocando el algoritmo de centrado en sí.
 
-### 1. ~~Probar YOLO26n~~ — DESCARTADO
+## PLANNING — Estado y trabajo pendiente
 
-Probado. Con nuestro dataset pequeño (146 train), YOLO26n da peores resultados que v8n:
-- mAP50: 0.862 (v8n: 0.951), precision: 0.756 (v8n: 0.972)
-- Seguimos con YOLOv8n. Notebook de prueba: `entrenar_modelo_yolo26n.ipynb`
+> **Fase actual: CALIBRACIÓN de valores en el robot real.** La arquitectura ya está montada;
+> ahora se miden/ajustan constantes (área de recogida, umbrales de verde, duty de arranque
+> del motor) y se pulen fallos de control. Medidas en curso en `Server/LAB_TAREAS_COMPANERO.md`.
 
-### 2. Arquitectura de tres capas
+### YA HECHO
 
-Separar seguridad de estrategia. La seguridad NO debe depender de YOLO.
+- **YOLO26n DESCARTADO**: con el dataset pequeño (146 train) da peor que v8n (mAP50 0.862 vs 0.951; precision 0.756 vs 0.972). Seguimos con v8n. Notebook: `entrenar_modelo_yolo26n.ipynb`.
+- **Arquitectura de 3 capas (subsumption)** en `PRACTICA_3.py`:
+  - Capa 0 — IR (hilo, prioridad ABSOLUTA): marcha atrás refleja, nunca se anula. `Infrared.read_one_infrared(1/2/3)`.
+  - Capa 1 — HSV (hilo, dueño de la cámara): verde en el tercio inferior → frena/retrocede. Publica el frame para que YOLO no redecodifique. Rango [40,50,50]-[85,255,255].
+  - Capa 2 — deliberativa (hilo principal): YOLO + sonar, FSM BUSCAR→ACERCAR→RECOGER→EVADIR.
+  - Árbitro `MotorSeguro` por prioridad IR > HSV > deliberativa.
+- **Script único** `PRACTICA_3.py`, solo NCNN, `--stream` opcional + modos de prueba.
+- **Ctrl+C rápido**: SIGINT + flag `running` + `dormir()` troceado + hilos daemon. (El sonar de gpiozero en RPi 4 NO hace busy-wait; el bloqueo temido era de la RPi 5 con lgpio.)
+- **Recogida por ÁREA de YOLO** (no por sonar: rebota mal en bolas pequeñas). Sonar solo para el obstáculo.
+- **Centrado por taps de pivote** + aproximación final a pulsos (P-AVANCE) para no subirse a la bola a ~5 FPS.
+- **Timeout de aproximación**: `TIMEOUT_ACERCAR` → si se atasca en ACERCAR, retrocede y re-busca.
+- **Supresión de línea por bola en borde** (versión actual): `bola_en_borde` (intersección de bboxes) + `RATIO_SUPRIMIR_LINEA` (por área). OJO: hoy es **booleana** (apaga el HSV del todo) → a mejorar (pendiente #1).
 
-**Capa 0 — IR (hilo propio):**
-- Los 3 infrarrojos frontales. Si alguno salta → marcha atrás inmediata.
-- No se anula NUNCA bajo ninguna circunstancia. Prioridad absoluta.
-- API: `Infrared.read_one_infrared(1/2/3)` — 1 = línea detectada.
+### PENDIENTE
 
-**Capa 1 — HSV reactiva (hilo propio):**
-- Saturación de verde en el tercio inferior del frame (código de Práctica 2).
-- Barata (microsegundos), determinista, independiente de YOLO.
-- Detecta "hay verde peligroso sí/no". Si sí → frenar y retroceder.
-- Se puede suprimir PARCIALMENTE cuando YOLO detecta bola cerca de línea (intersección de bboxes).
-- Comunicación con hilo principal: flag `suprimir_linea` (True/False).
-- Código de referencia en `PRACTICA_2_solo_vision.py`: HSV range [40,50,50]-[85,255,255], umbral 3000 píxeles.
+1. **Umbral de verde dinámico (rediseño de la supresión de línea).** Hoy `suprimir_linea` es un bool que pone `peligro=False` (apaga el HSV entero). Cambiar a **dos umbrales**: normal (~3000 px) y con-bola (~10-12k px, a medir en lab). El robot frena si verde > umbral, según haya o no bola en aproximación. **Sin** "techo de emergencia" por píxeles: el verde CAE a 0 cuando la línea se sale de la cámara (cámara alta), así que no se dispara — el backstop real es el **IR**. Bloqueado hasta medir el umbral con-bola (Tarea 2 del lab). Resuelve el fallo de la bola en esquina.
+2. **Decisión motor / fricción (stiction).** Tras medir el duty de arranque (Tarea 3), decidir entre: subir duties (fuerza, p.ej. `VEL_GIRO_BOLA`), quedarnos con los taps más largos ya puestos (tiempo), y/o **bajar NCNN de 4 a 3 hilos** para no ahogar el PWM por software. pigpio (PWM por DMA, inmune a la carga de CPU) solo si sigue temblando.
+3. **Verificación post-recogida.** Guardar `bola_area`/`bola_cx` antes de bajar la pinza; tras subir el brazo, comparar. Si el área bajó mucho / ya no se ve esa bola → éxito; si sigue grande en la misma posición → reintentar. Comparar ÁREA y POSICIÓN, no solo presencia (puede haber otra bola de fondo). (Durante la recogida la pinza tapa la cámara → ignorar percepción salvo IR.)
+4. **Memoria de bola tras evasión.** Si estaba en ACERCAR y tiene que evadir, guardar el último `bola_cx` y, tras evadir, girar hacia ahí en vez de re-buscar a ciegas. El "escape de línea" actual puede abandonar una bola buena cerca del borde.
 
-**Capa 2 — Deliberativa (hilo principal):**
-- YOLO + sonar. Máquina de estados: BUSCAR → ACERCAR → RECOGER → EVADIR.
-- YOLO para: identificar bola/línea, posición, tamaño, intersección de bboxes.
-- Sonar para: distancia a objetos.
+### Referencia
 
-### 3. Prioridades dentro de la capa deliberativa
-
-1. **Obstáculo (sonar):** esquivar suavemente si lejos (DIST_OBSTACULO_LEJOS), parada de emergencia si cerca (DIST_OBSTACULO). Solo si no hay bola visible/reciente.
-2. **Bola (YOLO + sonar combinados):**
-   - Sonar para distancia, YOLO para identificar y centrar
-   - Giro proporcional al error
-   - Retroceder si demasiado cerca
-   - Recoger cuando ambos confirman
-   - Frenar si cualquiera indica cercanía
-3. **Nada** → explorar avanzando, girar si >6s sin ver bola
-
-### 4. Bola cerca de línea (intersección de bboxes)
-
-- Usar intersección/solapamiento de bboxes de bola y línea para determinar si la bola está en el borde de la mesa.
-- Si hay intersección: suprimir parcialmente la reactividad HSV verde → permitir acercarse lento.
-- Cuanto más grande la bola (más cerca del robot), más se puede suprimir.
-- Se comunica del hilo principal al hilo reactivo con flag `suprimir_linea`.
-
-### 5. Secuencia de recogida
-
-- Activar flag `recogiendo = True` que deshabilita todo EXCEPTO IR.
-- Al bajar el brazo la pinza tapa la cámara → YOLO ve basura, HSV cambia. Ignorar todo.
-- Verificación post-recogida:
-  - Guardar `bola_area` y `bola_cx` justo antes de bajar pinza.
-  - Tras subir brazo, hacer un frame y comparar.
-  - Si YOLO no ve bola (o el área bajó drásticamente) → éxito, la pinza se la llevó.
-  - Si sigue viendo bola grande en la misma posición → fallo, reintentar.
-  - Ojo: si hay otra bola de fondo, YOLO la verá. Comparar ÁREA y POSICIÓN, no solo presencia.
-
-### 6. Memoria de bola tras evasión
-
-- Si el robot estaba en ACERCAR y tiene que evadir (línea/obstáculo), guardar último `bola_cx`.
-- Después de evadir, en vez de buscar aleatoriamente, girar hacia donde la vio por última vez.
-
-### 7. Timeout de aproximación
-
-- Si lleva >X segundos en estado ACERCAR sin llegar a RECOGER, algo va mal.
-- Volver a BUSCAR para no quedarse atascado indefinidamente.
-
-### 8. Ctrl+C rápido
-
-- Handler de `signal.SIGINT` que pone flag global `running = False`.
-- Todos los `time.sleep()` se reemplazan por sleeps cortos en bucle que comprueban el flag.
-- Las funciones de evasión y recogida comprueban el flag entre pasos.
-- Los hilos reactivos también comprueban el flag para terminar limpiamente.
-- Problema actual: sonar.get_distance() puede bloquear (busy-wait esperando eco). Poner timeout agresivo.
-
-### 9. Script único
-
-- Unificar los 4 scripts en uno solo con parámetros: `--ncnn`, `--stream`.
-- O al menos extraer la lógica común (movimiento, servo, evasión, bucle principal) a un módulo compartido.
-- Evitar aplicar cada cambio 4 veces.
-
-### 10. Streaming Freenove
-
-- Protocolo TCP: puerto 5003 (comandos), 8003 (vídeo).
-- Envío: 4 bytes longitud (little-endian `struct.pack('<I', len)`) + datos JPEG.
-- Versiones STREAM esperan conexión del cliente antes de arrancar el robot.
-- `TankServer` de `server.py` maneja los sockets.
+- **Prioridades en la Capa 2**: (1) evasión de línea YOLO / obstáculo sonar (solo si no hay bola visible/reciente), (2) bola: centrar con taps + recoger por área, retroceder si demasiado cerca, (3) explorar.
+- **Streaming Freenove**: TCP 5003 (comandos) / 8003 (vídeo). Envío: `struct.pack('<I', len)` + JPEG. `TankServer` en `server.py`. Con `--stream` espera al cliente antes de arrancar.
+- **Año anterior** (referencia cruda que aprobó): `Server/Pepe el marismeño/`. Corrían motores a ~2000 (sin problema de stiction), centrado **bang-bang de 3 cubos** (izq/centro/der a velocidad fija), recogida por sonar. Mucho más simple que lo nuestro — útil para no sobre-ingenierizar.
 
 ## Notas de usuario
 
