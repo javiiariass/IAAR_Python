@@ -57,8 +57,8 @@ class YOLODetectorNCNN:
         bin_path = f"{model_dir}/model.ncnn.bin"
 
         self.net = ncnn.Net()
-        # Usar todos los cores disponibles en la RPi
-        self.net.opt.num_threads = 4
+        # Usar más cores en la raspberry
+        self.net.opt.num_threads = 3
         self.net.opt.use_vulkan_compute = False  # Sin GPU en la RPi
 
         self.net.load_param(param_path)
